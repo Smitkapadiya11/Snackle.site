@@ -7,6 +7,7 @@ import { Logo } from "@/components/brand/Logo";
 import SnackleProductCard from "@/components/results/SnackleProductCard";
 import { AnalysisResult } from "@/lib/types";
 import { animateCounter, prefersReducedMotion } from "@/lib/animation/useAnime";
+import { useSiteAnimations } from "@/lib/animation/useSiteAnimations";
 
 type StatusFilter = "ALL" | "CRITICAL" | "DEAD_STOCK" | "OPPORTUNITY" | "HEALTHY" | "MONITOR";
 type SortKey = "priority" | "revenue_at_risk" | "capital_locked";
@@ -15,6 +16,7 @@ const FILTERS: StatusFilter[] = ["ALL", "CRITICAL", "DEAD_STOCK", "OPPORTUNITY",
 
 export default function ResultsPage() {
   const router = useRouter();
+  useSiteAnimations();
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [filter, setFilter] = useState<StatusFilter>("ALL");
   const [sortBy, setSortBy] = useState<SortKey>("priority");
@@ -183,12 +185,7 @@ export default function ResultsPage() {
         </div>
 
         <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-            gap: 16,
-            marginBottom: 40,
-          }}
+          className="kpi-row"
         >
           {[
             { label: "Critical", value: counts.CRITICAL, color: "#ef4444" },
@@ -238,7 +235,7 @@ export default function ResultsPage() {
             opacity: 0,
           }}
         >
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <div className="filter-tabs-scroll">
             {FILTERS.map((f) => (
               <button
                 key={f}
@@ -276,13 +273,7 @@ export default function ResultsPage() {
           </select>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))",
-            gap: 20,
-          }}
-        >
+        <div className="results-grid">
           {filteredCards.map((card, i) => (
             <SnackleProductCard key={card.product_name} card={card} currency={currency} index={i} />
           ))}

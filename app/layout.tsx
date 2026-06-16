@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
-import { SiteBackground } from "@/components/layout/SiteBackground";
+import { GridCanvas } from "@/components/art/GridCanvas";
 import "./globals.css";
 
 const display = Bricolage_Grotesque({
@@ -17,9 +17,17 @@ const body = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Snackle — Your Inventory. Predicted.",
+  title: "Snackle — Inventory Intelligence",
   description:
-    "Inventory intelligence powered by Snackle 1.0. Upload your data, answer 12 questions, and know exactly what to stock, clear, and watch.",
+    "The first AI-powered inventory intelligence model for Indian D2C brands. Upload your data, answer 12 questions, get exact decisions per product.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#080808",
 };
 
 export default function RootLayout({
@@ -29,8 +37,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} h-full antialiased`}>
-      <body className="snackle min-h-full flex flex-col">
-        <SiteBackground />
+      <body className="snackle min-h-full flex flex-col" style={{ background: "#080808" }}>
+        <GridCanvas />
         <ToastProvider>
           <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column" }}>
             {children}

@@ -18,6 +18,7 @@ import {
 import { normalizeCurrencyInput, normalizeHoldingCost } from "@/lib/snackle-questions";
 import { PROCESSING_MESSAGES } from "@/lib/snackle-questions";
 import { useProcessingAnimation } from "@/lib/animation/useAnime";
+import { useSiteAnimations } from "@/lib/animation/useSiteAnimations";
 
 type Product = {
   name: string;
@@ -43,7 +44,7 @@ export default function SnackleConsole() {
   const [questionIndex, setQuestionIndex] = useState(-1);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>("snackle-1.0");
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("en");
   const [showLangPicker, setShowLangPicker] = useState(false);
@@ -54,6 +55,7 @@ export default function SnackleConsole() {
   const [started, setStarted] = useState(false);
 
   useProcessingAnimation(isProcessing);
+  useSiteAnimations();
 
   const currentQuestionText = awaitingConfirmation
     ? getConfirmationText(selectedLanguage, products.length)
@@ -287,7 +289,7 @@ export default function SnackleConsole() {
         </div>
 
         {currentQuestion > 0 && (
-          <div style={{ marginTop: 8 }}>
+          <div className="console-question-progress" style={{ marginTop: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <span style={{ fontSize: 11, color: "var(--light)", opacity: 0.5, letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Setup Progress
@@ -333,7 +335,7 @@ export default function SnackleConsole() {
           </div>
         )}
 
-        <div style={{ marginTop: "auto", paddingTop: 20, borderTop: "1px solid rgba(229,229,229,0.06)" }}>
+        <div className="sidebar-mobile-hide" style={{ marginTop: "auto", paddingTop: 20, borderTop: "1px solid rgba(229,229,229,0.06)" }}>
           <p style={{ fontSize: 10, color: "var(--light)", opacity: 0.35, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
             Intelligence Tips
           </p>
@@ -361,8 +363,8 @@ export default function SnackleConsole() {
           }}
         >
           <div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700 }}>Mission Control</h1>
-            <p style={{ fontSize: 13, color: "var(--light)", opacity: 0.6 }}>Snackle 1.0 · Inventory Intelligence</p>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700 }}>Snackle Console</h1>
+            <p style={{ fontSize: 13, color: "var(--c-text-dim)" }}>Inventory Intelligence · Snackle 1.0</p>
           </div>
           <div style={{ position: "relative" }}>
             <button
@@ -469,11 +471,11 @@ export default function SnackleConsole() {
           </div>
         ) : (
           <>
-            <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "32px 24px" }}>
+            <div ref={scrollRef} className="scroll-container" style={{ flex: 1, overflowY: "auto", padding: "32px 24px" }}>
               {!started && (
                 <div style={{ textAlign: "center", padding: "40px 20px", maxWidth: 600, margin: "0 auto" }}>
-                  <div style={{ width: 200, height: 200, margin: "0 auto 32px" }}>
-                    <IntelligenceCreature width={200} height={200} />
+                  <div style={{ width: 220, height: 220, margin: "0 auto 32px" }}>
+                    <IntelligenceCreature size={220} />
                   </div>
                   <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 3vw, 40px)", fontWeight: 700, marginBottom: 16 }}>
                     Hello. I&apos;m Snackle 1.0.
@@ -628,10 +630,11 @@ export default function SnackleConsole() {
                         border: "none",
                         outline: "none",
                         color: "var(--white)",
-                        fontSize: 15,
+                        fontSize: 16,
                         resize: "none",
                         fontFamily: "var(--font-body)",
                         caretColor: "var(--amber)",
+                        minHeight: 40,
                       }}
                     />
                     <button
@@ -639,8 +642,9 @@ export default function SnackleConsole() {
                       onClick={handleSend}
                       disabled={!selectedModel || !inputValue.trim()}
                       style={{
-                        width: 42,
-                        height: 42,
+                        width: 44,
+                        height: 44,
+                        minWidth: 44,
                         borderRadius: "50%",
                         background: !selectedModel || !inputValue.trim() ? "rgba(229,229,229,0.06)" : "var(--amber)",
                         border: "none",
@@ -689,7 +693,7 @@ export default function SnackleConsole() {
             <p style={{ fontSize: 13, color: "var(--light)", opacity: 0.6, marginBottom: 24 }}>
               All questions will switch. Answer in your language — Snackle understands.
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div className="lang-picker-grid">
               {LANGUAGES.map((lang) => (
                 <button
                   key={lang.code}

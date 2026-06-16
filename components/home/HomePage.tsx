@@ -4,336 +4,390 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Navigation } from "@/components/layout/Navigation";
 import { Footer } from "@/components/layout/Footer";
-import { Section } from "@/components/layout/Section";
 import { IntelligenceCreature } from "@/components/art/IntelligenceCreature";
-import { ScrollReveal } from "@/lib/animation/ScrollReveal";
-import { IconUpload, IconChat, IconBrain } from "@/components/icons/StepIcons";
-import { prefersReducedMotion } from "@/lib/animation/useAnime";
+import { useSiteAnimations } from "@/lib/animation/useSiteAnimations";
 
 const ALGORITHMS = [
-  { name: "Monte Carlo Simulation", desc: "10,000 demand paths per product" },
-  { name: "Holt-Winters Forecast", desc: "Trend + seasonality, ensemble weighted" },
-  { name: "Statistical Safety Stock", desc: "Lead time variability accounted for" },
-  { name: "EOQ Optimization", desc: "Mathematically optimal order quantity" },
-  { name: "ABC-XYZ Matrix", desc: "9-cell classification, 9 strategies" },
-  { name: "Isolation Forest", desc: "ML anomaly detection on your sales" },
-  { name: "CUSUM Change Detection", desc: "Catches when demand sustainably shifts" },
-  { name: "Markdown Optimization", desc: "Price elasticity-based clearance pricing" },
-  { name: "GMROI Analysis", desc: "Is your inventory working hard enough?" },
+  { name: "Monte Carlo", icon: "◎", desc: "10,000 demand paths per product", tag: "Stockout Risk" },
+  { name: "Holt-Winters", icon: "⟿", desc: "Trend + seasonality ensemble forecast", tag: "Demand Forecast" },
+  { name: "Statistical SS", icon: "σ", desc: "Lead time variability accounted", tag: "Safety Stock" },
+  { name: "EOQ Model", icon: "∮", desc: "Mathematically optimal order qty", tag: "Reorder" },
+  { name: "ABC-XYZ", icon: "⊞", desc: "9-cell classification, 9 strategies", tag: "Classification" },
+  { name: "Isolation Forest", icon: "⊕", desc: "ML anomaly detection on sales", tag: "Anomaly" },
+  { name: "CUSUM", icon: "Δ", desc: "Detects when demand sustainably shifts", tag: "Change Point" },
+  { name: "Price Elasticity", icon: "ε", desc: "Optimal markdown price calculator", tag: "Dead Stock" },
+  { name: "GMROI", icon: "$", desc: "Is your inventory working hard enough?", tag: "Profitability" },
 ];
 
 const STEPS = [
-  { Icon: IconUpload, title: "Upload Your Data", desc: "Drop your CSV or Excel — sales history, current stock, prices. We accept any format and help you map the columns." },
-  { Icon: IconChat, title: "Answer 12 Questions", desc: "Snackle asks the smart questions: lead times, safety stock targets, channel mix, seasonality. One question at a time." },
-  { Icon: IconBrain, title: "Receive Intelligence", desc: "Snackle 1.0 runs 9 professional algorithms and presents one perfect decision per product." },
+  {
+    step: "01",
+    title: "Upload Your Data",
+    desc: "Drop your CSV or Excel export from Amazon, Flipkart, Shopify, or any platform. Snackle reads any column structure — no reformatting needed.",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden>
+        <path d="M16 4L16 20M16 4L10 10M16 4L22 10" stroke="#FCA311" strokeWidth="2" strokeLinecap="round" />
+        <path d="M4 24H28V28H4V24Z" fill="rgba(252,163,17,0.15)" stroke="#FCA311" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    step: "02",
+    title: "Answer 12 Questions",
+    desc: "Snackle interviews you in your language. Hindi, Gujarati, Tamil, Telugu and 7 more. One question at a time, answered naturally.",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden>
+        <circle cx="16" cy="16" r="13" stroke="#FCA311" strokeWidth="1.5" />
+        <path d="M12 13C12 10.8 13.8 9 16 9C18.2 9 20 10.8 20 13C20 15.5 17.5 16.5 16 18M16 22V22.5" stroke="#FCA311" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    step: "03",
+    title: "Receive Intelligence",
+    desc: "Snackle 1.0 runs 9 enterprise-grade algorithms and returns one clear decision per product. Exactly what to do, and why.",
+    icon: (
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden>
+        <path d="M8 16L13 21L24 10" stroke="#FCA311" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="16" cy="16" r="13" stroke="#FCA311" strokeWidth="1.5" />
+      </svg>
+    ),
+  },
 ];
 
 const DEMO_CARDS = [
-  { status: "CRITICAL", color: "#ef4444", name: "Face Serum Premium", price: "₹899", action: "Reorder 340 units · Stockout in 5 days" },
-  { status: "DEAD STOCK", color: "#eab308", name: "Moisturiser 50ml", price: "₹349", action: "Clear at 35% off · ₹12K capital locked" },
-  { status: "OPPORTUNITY", color: "#22c55e", name: "Vitamin C Toner", price: "₹599", action: "Scale ads · Competitor gap detected" },
+  {
+    status: "CRITICAL",
+    statusColor: "#ef4444",
+    name: "Face Serum Premium",
+    price: "₹899",
+    summary:
+      "You have only 5 days of stock on your best-selling serum. At current pace you will run out by next Tuesday and lose ₹38,000 in sales that week alone.",
+    actions: ["Order 112 units NOW", "Stockout in 5 days", "No discount needed"],
+    metric: "5 days stock",
+    metricColor: "#ef4444",
+  },
+  {
+    status: "DEAD STOCK",
+    statusColor: "#eab308",
+    name: "Moisturiser 50ml",
+    price: "₹349",
+    summary:
+      "This product has been sitting for 3 months and sales are dropping. You have ₹52,500 locked in 350 units that are not moving.",
+    actions: ["20% off — sell at ₹279", "Bundle with serum", "Free up ₹42k"],
+    metric: "₹52,500 locked",
+    metricColor: "#eab308",
+  },
+  {
+    status: "OPPORTUNITY",
+    statusColor: "#22c55e",
+    name: "Vitamin C Toner",
+    price: "₹599",
+    summary:
+      "Demand will spike in the next 30 days — your competitor just went out of stock. You only have 18 days of inventory and will miss this window.",
+    actions: ["Order 200 units", "₹12k ads — act now", "₹85k opportunity"],
+    metric: "18 days stock",
+    metricColor: "#22c55e",
+  },
 ];
 
 export default function HomePage() {
+  useSiteAnimations({ hero: true });
+
   useEffect(() => {
-    if (prefersReducedMotion()) return;
-
-    import("animejs").then(({ animate, stagger, createTimeline }) => {
-      const tl = createTimeline();
-      tl.add(".nav-item", { opacity: [0, 1], translateY: [-20, 0], delay: stagger(60), duration: 600 }, 0);
-      tl.add(".hero-badge", { opacity: [0, 1], scale: [0.8, 1], duration: 500 }, 200);
-      tl.add(".hero-line-1", { opacity: [0, 1], translateY: [40, 0], duration: 700, easing: "easeOutExpo" }, 350);
-      tl.add(".hero-line-2", { opacity: [0, 1], translateY: [40, 0], duration: 700, easing: "easeOutExpo" }, 500);
-      tl.add(".hero-subtitle", { opacity: [0, 1], translateY: [20, 0], duration: 600 }, 650);
-      tl.add(".hero-cta", { opacity: [0, 1], translateY: [20, 0], duration: 600 }, 800);
-      animate(".pulse-dot", { scale: [1, 1.5, 1], opacity: [1, 0.6, 1], duration: 2000, loop: true, easing: "easeInOutSine" });
-    });
-
     const counters = [
-      { selector: ".counter-accuracy", target: 94, suffix: "%" },
-      { selector: ".counter-sim", target: 10, suffix: "K+" },
-      { selector: ".counter-abc", target: 9, suffix: "x" },
-      { selector: ".counter-time", target: 5, suffix: "min" },
+      { id: "stat-accuracy", target: 94, suffix: "%" },
+      { id: "stat-sim", target: 10, suffix: "K+" },
+      { id: "stat-abc", target: 9, suffix: "x" },
+      { id: "stat-time", target: 5, suffix: "min" },
     ];
 
-    const statsEl = document.querySelector(".hero-stats");
-    if (!statsEl) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return;
+        observer.disconnect();
 
-    const obs = new IntersectionObserver(
-      async ([entry]) => {
-        if (!entry.isIntersecting) return;
-        obs.disconnect();
-        const { animate } = await import("animejs");
-        counters.forEach(({ selector, target, suffix }) => {
-          const el = document.querySelector(selector);
+        counters.forEach(({ id, target, suffix }) => {
+          const el = document.getElementById(id);
           if (!el) return;
-          const obj = { val: 0 };
-          animate(obj, {
-            val: target,
-            duration: 2000,
-            delay: 300,
-            easing: "easeOutExpo",
-            update: () => {
-              el.textContent = `${Math.round(obj.val)}${suffix}`;
-            },
-          });
+          let start = 0;
+          const step = () => {
+            start += (target - start) * 0.08;
+            el.textContent = (start >= target - 0.5 ? target : Math.round(start)) + suffix;
+            if (start < target - 0.5) requestAnimationFrame(step);
+            else el.textContent = target + suffix;
+          };
+          requestAnimationFrame(step);
         });
       },
       { threshold: 0.3 },
     );
-    obs.observe(statsEl);
-    return () => obs.disconnect();
+
+    const statsEl = document.querySelector(".hero-stats");
+    if (statsEl) observer.observe(statsEl);
+    return () => observer.disconnect();
   }, []);
 
   return (
     <>
       <Navigation />
 
-      {/* Hero — split layout */}
-      <section
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          padding: "120px clamp(24px, 5vw, 80px) 80px",
-          gap: 60,
-          position: "relative",
-          zIndex: 1,
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ flex: "1 1 400px", maxWidth: 600 }}>
+      {/* Hero */}
+      <section className="reveal-section hero-section">
+        <div className="section-wrap">
+          <div className="hero-layout">
+            <div className="hero-content">
           <div
-            className="hero-badge nav-item"
+            className="hero-badge hero-anim"
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              background: "rgba(252,163,17,0.12)",
-              border: "1px solid rgba(252,163,17,0.3)",
-              borderRadius: "var(--r-full)",
+              background: "var(--c-accent-dim)",
+              border: "1px solid var(--c-accent-border)",
+              borderRadius: 999,
               padding: "6px 16px",
               marginBottom: 24,
               opacity: 0,
             }}
           >
-            <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--amber)", display: "inline-block" }} />
-            <span style={{ fontSize: 12, color: "var(--amber)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--c-accent)", display: "inline-block" }} />
+            <span style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Snackle 1.0 — Now Live
             </span>
           </div>
 
-          <h1
-            className="hero-title"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(52px, 5.5vw, 88px)",
-              fontWeight: 800,
-              lineHeight: 1.05,
-              letterSpacing: "-0.035em",
-              marginBottom: 28,
-            }}
-          >
-            <span className="hero-line-1" style={{ color: "var(--white)", display: "block", opacity: 0 }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(52px, 5.5vw, 88px)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.035em", marginBottom: 28 }}>
+            <span className="hero-title-line-1 hero-anim" style={{ color: "var(--c-text)", display: "block", opacity: 0 }}>
               Your Inventory.
             </span>
-            <span className="hero-line-2" style={{ color: "var(--amber)", display: "block", opacity: 0 }}>
+            <span className="hero-title-line-2 hero-anim" style={{ color: "var(--c-accent)", display: "block", opacity: 0 }}>
               Predicted.
             </span>
           </h1>
 
-          <p
-            className="hero-subtitle"
-            style={{
-              fontSize: 18,
-              color: "var(--light)",
-              lineHeight: 1.7,
-              maxWidth: 480,
-              opacity: 0,
-              marginBottom: 0,
-            }}
-          >
+          <p className="hero-subtitle hero-anim" style={{ fontSize: 18, color: "var(--c-text-dim)", lineHeight: 1.7, maxWidth: 480, opacity: 0, marginBottom: 0 }}>
             Upload your data. Answer 12 questions. Snackle&apos;s intelligence engine tells you exactly what to stock, what to clear, and where opportunity hides — before your competitors see it.
           </p>
 
-          <div className="hero-cta" style={{ display: "flex", gap: 16, marginTop: 40, flexWrap: "wrap", opacity: 0 }}>
+          <div className="hero-cta-wrap hero-anim btn-row" style={{ display: "flex", gap: 16, marginTop: 40, flexWrap: "wrap", opacity: 0 }}>
             <Link href="/use" className="btn-primary">
               Start Forecasting Free →
             </Link>
-            <a href="#how-it-works" className="btn-outline">
+            <a href="#how-it-works" className="btn-ghost">
               See How It Works
             </a>
           </div>
 
-          <div className="hero-stats" style={{ display: "flex", gap: 40, marginTop: 60, flexWrap: "wrap" }}>
+          <div className="hero-stats" style={{ display: "flex", gap: 48, marginTop: 60, flexWrap: "wrap" }}>
             {[
-              { label: "Forecast Accuracy", cls: "counter-accuracy", start: "0%" },
-              { label: "Simulations Per Product", cls: "counter-sim", start: "0K+" },
-              { label: "ABC-XYZ Matrix Cells", cls: "counter-abc", start: "0x" },
-              { label: "Full Analysis Time", cls: "counter-time", start: "0min" },
+              { id: "stat-accuracy", init: "0%", label: "Forecast Accuracy" },
+              { id: "stat-sim", init: "0K+", label: "Simulations Per Product" },
+              { id: "stat-abc", init: "0x", label: "ABC-XYZ Matrix Cells" },
+              { id: "stat-time", init: "0min", label: "Full Analysis Time" },
             ].map((s) => (
-              <div key={s.cls} style={{ textAlign: "center" }}>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 36, fontWeight: 700, color: "var(--amber)", letterSpacing: "-0.02em", lineHeight: 1 }}>
-                  <span className={s.cls}>{s.start}</span>
+              <div key={s.id} className="hero-stat hero-anim" style={{ textAlign: "center", opacity: 0 }}>
+                <div
+                  id={s.id}
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "clamp(36px, 5vw, 56px)",
+                    fontWeight: 800,
+                    color: "var(--c-accent)",
+                    letterSpacing: "-0.03em",
+                    lineHeight: 1,
+                  }}
+                >
+                  {s.init}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--light)", opacity: 0.5, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: "var(--c-text-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 8 }}>
                   {s.label}
                 </div>
               </div>
             ))}
           </div>
-        </div>
+            </div>
 
-        <div style={{ flex: "1 1 360px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: 320 }}>
-          <IntelligenceCreature width={500} height={500} />
+            <div className="hero-creature-wrap">
+              <IntelligenceCreature />
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Problem */}
-      <Section dark={false} style={{ background: "rgba(20,33,61,0.85)", position: "relative", zIndex: 1 }}>
-        <ScrollReveal direction="up">
-          <h2 className="section-title" style={{ textAlign: "center" }}>The inventory crisis nobody talks about</h2>
-        </ScrollReveal>
-        <ScrollReveal direction="up" stagger staggerDelay={100}>
-          <div className="problem-grid">
+      <section className="reveal-section" style={{ padding: "80px 0", position: "relative", zIndex: 1 }}>
+        <div className="section-wrap reveal-card">
+          <p className="section-label anim-child">The Indian Inventory Problem</p>
+          <h2 className="section-title anim-child" style={{ maxWidth: 600, marginBottom: 60 }}>
+            The crisis nobody
+            <br />
+            talks about.
+          </h2>
+          <div className="grid-3">
             {[
-              { stat: "₹2.3L", label: "Lost per stockout event", desc: "Average Indian D2C brand — every empty shelf is revenue walking out the door." },
-              { stat: "43%", label: "Brands with dead stock", desc: "FMCG brands holding inventory exceeding 90 days without a clearance plan." },
-              { stat: "12%", label: "Use real forecasting", desc: "Most brands guess. Snackle 1.0 runs the math Fortune 500 companies pay millions for." },
-            ].map((item) => (
-              <div key={item.label} className="card">
-                <div className="big-number" style={{ fontSize: 48, marginBottom: 12 }}>{item.stat}</div>
-                <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{item.label}</div>
-                <p style={{ fontSize: 14, color: "var(--light)", opacity: 0.7, lineHeight: 1.6 }}>{item.desc}</p>
+              {
+                number: "₹8,000 Cr",
+                label: "Lost annually by Indian D2C brands to poor inventory decisions",
+                sub: "That's your competitor's advantage. And yours, if you act first.",
+                urgent: true,
+              },
+              {
+                number: "43%",
+                label: "of FMCG brands have dead stock older than 90 days",
+                sub: "Capital locked in products that stopped moving. Freed by Snackle.",
+                urgent: false,
+              },
+              {
+                number: "12%",
+                label: "of brands forecast demand with any real algorithm",
+                sub: "Everyone else is guessing. Snackle 1.0 changes that equation.",
+                urgent: false,
+              },
+            ].map((card) => (
+              <div
+                key={card.number}
+                className="glass anim-child"
+                style={{
+                  padding: "36px 32px",
+                  borderColor: card.urgent ? "var(--c-accent-border)" : undefined,
+                  background: card.urgent ? "var(--c-accent-dim)" : undefined,
+                }}
+              >
+                <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(36px, 4vw, 52px)", fontWeight: 800, color: "var(--c-accent)", letterSpacing: "-0.03em", lineHeight: 1, marginBottom: 16 }}>
+                  {card.number}
+                </div>
+                <p style={{ fontSize: 15, color: "var(--c-text)", lineHeight: 1.55, fontWeight: 500, marginBottom: 12 }}>{card.label}</p>
+                <p style={{ fontSize: 13, color: "var(--c-text-dim)", lineHeight: 1.6 }}>{card.sub}</p>
               </div>
             ))}
           </div>
-        </ScrollReveal>
-      </Section>
+        </div>
+      </section>
 
       {/* How it works */}
-      <Section id="how-it-works" dark style={{ position: "relative", zIndex: 1 }}>
-        <ScrollReveal direction="up">
-          <h2 className="section-title" style={{ textAlign: "center" }}>Three steps. One decision.</h2>
-          <p className="section-subtitle" style={{ margin: "0 auto", textAlign: "center" }}>No data science degree required.</p>
-        </ScrollReveal>
-        <ScrollReveal direction="up" stagger staggerDelay={120}>
-          <div className="steps-row">
-            {STEPS.map((step) => (
-              <div key={step.title} className="card" style={{ textAlign: "center" }}>
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
-                  <step.Icon />
+      <section id="how-it-works" className="reveal-section" style={{ padding: "80px 0", position: "relative", zIndex: 1 }}>
+        <div className="section-wrap reveal-card">
+          <p className="section-label anim-child">How It Works</p>
+          <h2 className="section-title anim-child" style={{ marginBottom: 16 }}>Three steps. One decision.</h2>
+          <p className="section-subtitle anim-child">No data science degree required.</p>
+          <div className="steps-grid">
+            {STEPS.map((s) => (
+              <div key={s.step} className="glass anim-child" style={{ padding: "40px 32px" }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 64, fontWeight: 800, color: "rgba(252,163,17,0.08)", lineHeight: 1, marginBottom: 24 }}>
+                  {s.step}
                 </div>
-                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, marginBottom: 12 }}>{step.title}</h3>
-                <p style={{ fontSize: 14, color: "var(--light)", opacity: 0.75, lineHeight: 1.6 }}>{step.desc}</p>
+                <div style={{ marginBottom: 20 }}>{s.icon}</div>
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, color: "var(--c-text)", marginBottom: 12 }}>{s.title}</h3>
+                <p style={{ fontSize: 15, color: "var(--c-text-dim)", lineHeight: 1.65 }}>{s.desc}</p>
               </div>
             ))}
           </div>
-        </ScrollReveal>
-      </Section>
+        </div>
+      </section>
 
       {/* Algorithms */}
-      <Section dark style={{ position: "relative", zIndex: 1 }}>
-        <ScrollReveal direction="up">
-          <h2 className="section-title" style={{ textAlign: "center" }}>9 algorithms. One intelligence.</h2>
-          <p className="section-subtitle" style={{ margin: "0 auto", textAlign: "center" }}>
-            The same methods used by Amazon and SAP — now for Indian D2C brands.
-          </p>
-        </ScrollReveal>
-        <ScrollReveal direction="up" stagger staggerDelay={80}>
+      <section className="reveal-section" style={{ padding: "80px 0", position: "relative", zIndex: 1 }}>
+        <div className="section-wrap reveal-card">
+          <p className="section-label anim-child">The Engine</p>
+          <h2 className="section-title anim-child">9 algorithms. One intelligence.</h2>
+          <p className="section-subtitle anim-child">The same methods used by Amazon and SAP — now for Indian D2C brands.</p>
           <div className="algo-grid">
             {ALGORITHMS.map((algo) => (
-              <div key={algo.name} className="algo-card">
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--amber)", marginBottom: 16 }} />
-                <h4 style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, marginBottom: 8, color: "var(--amber)" }}>{algo.name}</h4>
-                <p style={{ fontSize: 13, color: "var(--light)", opacity: 0.7 }}>{algo.desc}</p>
+              <div key={algo.name} className="glass anim-child" style={{ padding: "28px 24px" }}>
+                <div style={{ fontSize: 28, color: "var(--c-accent)", marginBottom: 12 }}>{algo.icon}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--c-text-muted)", marginBottom: 8 }}>
+                  {algo.tag}
+                </div>
+                <h4 style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, marginBottom: 8, color: "var(--c-accent)" }}>{algo.name}</h4>
+                <p style={{ fontSize: 13, color: "var(--c-text-dim)", lineHeight: 1.5 }}>{algo.desc}</p>
               </div>
             ))}
           </div>
-        </ScrollReveal>
-      </Section>
+        </div>
+      </section>
 
-      {/* Intelligence Report preview */}
-      <Section dark={false} style={{ background: "rgba(20,33,61,0.85)", position: "relative", zIndex: 1 }}>
-        <ScrollReveal direction="up">
-          <span className="section-label">The Intelligence Report</span>
-          <h2 className="section-title">Exactly what you&apos;ll receive.</h2>
-          <p className="section-subtitle">Every product in your portfolio gets a card like this.</p>
-        </ScrollReveal>
-        <ScrollReveal direction="up" stagger staggerDelay={100}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20, marginBottom: 40 }}>
+      {/* Demo cards */}
+      <section className="reveal-section" style={{ padding: "80px 0", position: "relative", zIndex: 1 }}>
+        <div className="section-wrap reveal-card">
+          <p className="section-label anim-child">The Intelligence Report</p>
+          <h2 className="section-title anim-child">Exactly what you&apos;ll receive.</h2>
+          <p className="section-subtitle anim-child">Every product in your portfolio gets a card like this.</p>
+          <div className="demo-cards-grid">
             {DEMO_CARDS.map((card) => (
-              <div
-                key={card.name}
-                className="card"
-                style={{ borderLeft: `4px solid ${card.color}`, background: `${card.color}08` }}
-              >
-                <div style={{ fontSize: 11, fontWeight: 700, color: card.color, letterSpacing: "0.08em", marginBottom: 12 }}>{card.status}</div>
+              <div key={card.name} className="glass anim-child" style={{ padding: 28, borderLeft: `4px solid ${card.statusColor}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: card.statusColor, letterSpacing: "0.08em", marginBottom: 12 }}>{card.status}</div>
                 <h4 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{card.name}</h4>
-                <p style={{ fontSize: 14, color: "var(--light)", opacity: 0.6, marginBottom: 16 }}>{card.price}</p>
-                <p style={{ fontSize: 13, color: "var(--light)", opacity: 0.85 }}>{card.action}</p>
+                <p style={{ fontSize: 14, color: "var(--c-text-dim)", marginBottom: 16 }}>{card.price}</p>
+                <p style={{ fontSize: 14, color: "var(--c-text-dim)", lineHeight: 1.65, marginBottom: 20 }}>{card.summary}</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+                  {card.actions.map((a) => (
+                    <span key={a} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 999, background: "var(--c-accent-dim)", border: "1px solid var(--c-accent-border)", color: "var(--c-accent)" }}>
+                      {a}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: card.metricColor }}>{card.metric}</div>
               </div>
             ))}
           </div>
-        </ScrollReveal>
-        <ScrollReveal direction="up">
           <div style={{ textAlign: "center" }}>
-            <Link href="/use" className="btn-primary">Get my intelligence report →</Link>
+            <Link href="/use" className="btn-primary anim-child">
+              Get my intelligence report →
+            </Link>
           </div>
-        </ScrollReveal>
-      </Section>
+        </div>
+      </section>
 
       {/* Console preview */}
-      <Section dark style={{ position: "relative", zIndex: 1 }}>
-        <ScrollReveal direction="up">
+      <section className="reveal-section" style={{ padding: "80px 0", position: "relative", zIndex: 1 }}>
+        <div className="section-wrap reveal-card">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 48, alignItems: "center" }}>
-            <div className="card" style={{ minHeight: 320 }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 11, color: "var(--amber)", marginBottom: 16, letterSpacing: "0.1em" }}>SNACKLE CONSOLE</div>
-              <div style={{ background: "rgba(0,0,0,0.4)", borderRadius: 12, padding: 16, marginBottom: 12, fontSize: 13, borderLeft: "3px solid var(--amber)" }}>
+            <div className="glass anim-child" style={{ padding: 32, minHeight: 320 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 11, color: "var(--c-accent)", marginBottom: 16, letterSpacing: "0.1em" }}>SNACKLE CONSOLE</div>
+              <div style={{ background: "rgba(0,0,0,0.4)", borderRadius: 12, padding: 16, marginBottom: 12, fontSize: 13, borderLeft: "3px solid var(--c-accent)" }}>
                 Question 3 of 12 — Where do you primarily sell?
               </div>
-              <div style={{ background: "rgba(252,163,17,0.1)", borderRadius: 12, padding: 16, fontSize: 13, textAlign: "right" }}>
+              <div style={{ background: "var(--c-accent-dim)", borderRadius: 12, padding: 16, fontSize: 13, textAlign: "right" }}>
                 Amazon India + Own Website
               </div>
             </div>
-            <div>
+            <div className="anim-child">
               <h2 className="section-title">The Snackle Console</h2>
               <p className="section-subtitle">Meet the most intelligent inventory interface ever built.</p>
-              <p style={{ fontSize: 15, color: "var(--light)", opacity: 0.7, lineHeight: 1.7, marginBottom: 32 }}>
+              <p style={{ fontSize: 15, color: "var(--c-text-dim)", lineHeight: 1.7, marginBottom: 32 }}>
                 Powered by Snackle 1.0 — our first model. Version 4 changes everything.
               </p>
               <Link href="/use" className="btn-primary">Enter the Console →</Link>
             </div>
           </div>
-        </ScrollReveal>
-      </Section>
+        </div>
+      </section>
 
       {/* Guide */}
-      <Section dark style={{ position: "relative", zIndex: 1 }}>
-        <ScrollReveal direction="up">
-          <h2 className="section-title" style={{ textAlign: "center" }}>From data to decisions in under 5 minutes</h2>
-        </ScrollReveal>
-        {[
-          { title: "Drop your data, any format", body: "Export from Amazon Seller Central, Flipkart, Meesho, Shopify, or your own spreadsheet. Snackle reads CSV and Excel with automatic column mapping.", reverse: false },
-          { title: "Snackle interviews your brand", body: "12 questions. One at a time. Answer in English or your regional language — Hindi, Gujarati, Tamil, Telugu, and more.", reverse: true },
-          { title: "Deep analysis runs in the background", body: "Snackle 1.0 simulates 10,000 demand scenarios, runs 9 inventory algorithms, and classifies every SKU.", reverse: false },
-          { title: "One decision per product. Crystal clear.", body: "Critical alerts. Dead stock clearance prices. Opportunity windows. Reorder quantities with exact costs.", reverse: true },
-        ].map((block) => (
-          <ScrollReveal key={block.title} direction={block.reverse ? "right" : "left"}>
-            <div className={`guide-block ${block.reverse ? "guide-block--reverse" : ""}`}>
-              <div className="guide-visual">
-                <div style={{ width: 64, height: 64, borderRadius: "50%", border: "2px solid rgba(252,163,17,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ width: 24, height: 24, borderRadius: "50%", background: "var(--amber)", opacity: 0.6 }} />
-                </div>
+      <section className="reveal-section" style={{ padding: "80px 0", position: "relative", zIndex: 1 }}>
+        <div className="section-wrap">
+          <h2 className="section-title anim-child reveal-card" style={{ textAlign: "center", marginBottom: 64 }}>
+            From data to decisions in under 5 minutes
+          </h2>
+          {[
+            { title: "Drop your data, any format", body: "Export from Amazon Seller Central, Flipkart, Meesho, Shopify, or your own spreadsheet. Snackle reads CSV and Excel with automatic column mapping.", reverse: false },
+            { title: "Snackle interviews your brand", body: "12 questions. One at a time. Answer in English or your regional language — Hindi, Gujarati, Tamil, Telugu, and more.", reverse: true },
+            { title: "Deep analysis runs in the background", body: "Snackle 1.0 simulates 10,000 demand scenarios, runs 9 inventory algorithms, and classifies every SKU.", reverse: false },
+            { title: "One decision per product. Crystal clear.", body: "Critical alerts. Dead stock clearance prices. Opportunity windows. Reorder quantities with exact costs.", reverse: true },
+          ].map((block) => (
+            <div key={block.title} className={`guide-block reveal-card ${block.reverse ? "guide-block--reverse" : ""}`}>
+              <div className="guide-visual glass anim-child">
+                <IntelligenceCreature size={180} />
               </div>
-              <div className="guide-text">
+              <div className="guide-text anim-child">
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, marginBottom: 16 }}>{block.title}</h3>
-                <p style={{ fontSize: 16, color: "var(--light)", opacity: 0.75, lineHeight: 1.7 }}>{block.body}</p>
+                <p style={{ fontSize: 16, color: "var(--c-text-dim)", lineHeight: 1.7 }}>{block.body}</p>
               </div>
             </div>
-          </ScrollReveal>
-        ))}
-      </Section>
+          ))}
+        </div>
+      </section>
 
       <Footer />
     </>

@@ -1,177 +1,178 @@
-"use client";
+'use client';
+import { useEffect, useRef, useState } from 'react';
 
-import { useEffect, useRef } from "react";
-
-interface Node {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  connections: number[];
-  size: number;
-  pulseOffset: number;
-  isBrain: boolean;
-}
-
-export function IntelligenceCreature({ width = 500, height = 500 }: { width?: number; height?: number }) {
+export function IntelligenceCreature({
+  size: propSize,
+  width,
+  height,
+  className = '',
+}: {
+  size?: number;
+  width?: number;
+  height?: number;
+  className?: string;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouse = useRef({ x: width / 2, y: height / 2 });
-  const nodes = useRef<Node[]>([]);
-  const frame = useRef<number>(0);
+  const explicitSize = propSize ?? (width && height ? Math.max(width, height) : undefined);
+  const [size, setSize] = useState(explicitSize ?? 460);
+
+  useEffect(() => {
+    if (explicitSize) {
+      setSize(explicitSize);
+      return;
+    }
+    const updateSize = () => {
+      if (containerRef.current) {
+        const w = containerRef.current.offsetWidth;
+        setSize(Math.min(Math.max(w, 160), 460));
+      }
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, [explicitSize]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const NODE_COUNT = 28;
-    const cx = width / 2;
-    const cy = height / 2;
-    nodes.current = [];
+    canvas.width = size;
+    canvas.height = size;
 
-    for (let i = 0; i < NODE_COUNT; i++) {
-      const cluster = Math.floor(i / 7);
-      const clusterAngle = (cluster / 4) * Math.PI * 2;
-      const clusterR = 100;
-      const jitter = 60;
-      nodes.current.push({
-        x: cx + Math.cos(clusterAngle) * clusterR + (Math.random() - 0.5) * jitter,
-        y: cy + Math.sin(clusterAngle) * clusterR + (Math.random() - 0.5) * jitter,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        connections: [],
-        size: 2 + Math.random() * 4,
-        pulseOffset: Math.random() * Math.PI * 2,
-        isBrain: i < 4,
+    const CX = size / 2, CY = size / 2;
+    let raf: number;
+    let mouse = { x: CX, y: CY };
+
+    const nodes: Array<{
+      x: number; y: number; baseX: number; baseY: number;
+      vx: number; vy: number; r: number; pulse: number;
+    }> = [];
+
+    nodes.push({ x: CX, y: CY, baseX: CX, baseY: CY, vx: 0, vy: 0, r: 7, pulse: 0 });
+
+    const ringScale = size / 460;
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const bx = CX + Math.cos(a) * 70 * ringScale, by = CY + Math.sin(a) * 70 * ringScale;
+      nodes.push({ x: bx, y: by, baseX: bx, baseY: by, vx: 0, vy: 0, r: 4.5 * ringScale, pulse: Math.random() * Math.PI * 2 });
+    }
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 + 0.3;
+      const bx = CX + Math.cos(a) * 140 * ringScale, by = CY + Math.sin(a) * 140 * ringScale;
+      nodes.push({ x: bx, y: by, baseX: bx, baseY: by, vx: 0, vy: 0, r: 3 * ringScale, pulse: Math.random() * Math.PI * 2 });
+    }
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      const bx = CX + Math.cos(a) * 200 * ringScale, by = CY + Math.sin(a) * 200 * ringScale;
+      nodes.push({ x: bx, y: by, baseX: bx, baseY: by, vx: 0, vy: 0, r: 2 * ringScale, pulse: Math.random() * Math.PI * 2 });
+    }
+
+    const edges: [number, number][] = [];
+    for (let i = 0; i < nodes.length; i++) {
+      const dists = nodes.map((n, j) => ({
+        j, d: Math.sqrt((n.x - nodes[i].x) ** 2 + (n.y - nodes[i].y) ** 2),
+      })).filter(e => e.j !== i).sort((a, b) => a.d - b.d);
+
+      dists.slice(0, 3).forEach(({ j, d }) => {
+        if (d < 200 * ringScale && !edges.find(([a, b]) => (a === i && b === j) || (a === j && b === i))) {
+          edges.push([i, j]);
+        }
       });
     }
 
-    nodes.current.push({
-      x: cx,
-      y: cy,
-      vx: 0,
-      vy: 0,
-      connections: [],
-      size: 8,
-      pulseOffset: 0,
-      isBrain: true,
-    });
-
-    nodes.current.forEach((node, i) => {
-      nodes.current.forEach((other, j) => {
-        if (i === j) return;
-        const d = Math.sqrt((node.x - other.x) ** 2 + (node.y - other.y) ** 2);
-        if (d < 140) node.connections.push(j);
-      });
-    });
-
-    const onMouse = (e: MouseEvent) => {
+    const onMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      mouse.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      mouse = { x: (e.clientX - rect.left) * (size / rect.width), y: (e.clientY - rect.top) * (size / rect.height) };
     };
-    canvas.addEventListener("mousemove", onMouse);
+    canvas.addEventListener('mousemove', onMove);
 
-    const render = (now: number) => {
-      frame.current = requestAnimationFrame(render);
-      ctx.clearRect(0, 0, width, height);
+    let t = 0;
+    const render = () => {
+      raf = requestAnimationFrame(render);
+      ctx.clearRect(0, 0, size, size);
+      t += 0.012;
 
-      const t = now * 0.001;
-      const N = nodes.current;
-
-      N.forEach((node) => {
-        if (node.x === cx && node.y === cy && node.isBrain && node.size === 8) return;
-
-        const mdx = mouse.current.x - node.x;
-        const mdy = mouse.current.y - node.y;
-        const md = Math.sqrt(mdx * mdx + mdy * mdy);
-        if (md < 200) {
-          node.vx += mdx * 0.0003;
-          node.vy += mdy * 0.0003;
-        }
-        node.vx += (cx - node.x) * 0.0005;
-        node.vy += (cy - node.y) * 0.0005;
-        node.vx *= 0.97;
-        node.vy *= 0.97;
-        node.x += node.vx;
-        node.y += node.vy;
+      nodes.forEach((n, i) => {
+        if (i === 0) return;
+        const floatX = Math.sin(t + n.pulse) * 3;
+        const floatY = Math.cos(t * 0.7 + n.pulse) * 3;
+        const dx = mouse.x - n.baseX, dy = mouse.y - n.baseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const pull = dist < 200 * ringScale ? (200 * ringScale - dist) / (200 * ringScale) * 12 : 0;
+        const mx = (dx / (dist || 1)) * pull;
+        const my = (dy / (dist || 1)) * pull;
+        n.x = n.baseX + floatX + mx;
+        n.y = n.baseY + floatY + my;
       });
 
-      N.forEach((node, i) => {
-        node.connections.forEach((j) => {
-          if (j <= i) return;
-          const other = N[j];
-          const dist = Math.sqrt((node.x - other.x) ** 2 + (node.y - other.y) ** 2);
-          if (dist > 180) return;
+      edges.forEach(([a, b]) => {
+        const na = nodes[a], nb = nodes[b];
+        const dist = Math.sqrt((na.x - nb.x) ** 2 + (na.y - nb.y) ** 2);
+        const maxDist = 230 * ringScale;
+        if (dist > maxDist) return;
+        const baseOp = (1 - dist / maxDist) * 0.22;
+        const pulsePos = (t * 0.4 + a * 0.13) % 1;
+        const px = na.x + (nb.x - na.x) * pulsePos;
+        const py = na.y + (nb.y - na.y) * pulsePos;
 
-          const lineOp = Math.max(0, 1 - dist / 180) * 0.3;
-          const gradient = ctx.createLinearGradient(node.x, node.y, other.x, other.y);
-          gradient.addColorStop(0, `rgba(252,163,17,${lineOp})`);
-          gradient.addColorStop(0.5, `rgba(252,163,17,${lineOp * 2})`);
-          gradient.addColorStop(1, `rgba(252,163,17,${lineOp})`);
+        ctx.strokeStyle = `rgba(252,163,17,${baseOp})`;
+        ctx.lineWidth = 0.7;
+        ctx.beginPath(); ctx.moveTo(na.x, na.y); ctx.lineTo(nb.x, nb.y); ctx.stroke();
 
-          ctx.strokeStyle = gradient;
-          ctx.lineWidth = 0.6;
-          ctx.beginPath();
-          ctx.moveTo(node.x, node.y);
-          ctx.lineTo(other.x, other.y);
-          ctx.stroke();
-
-          const pulsePos = (t * 0.3 + i * 0.07) % 1;
-          const px = node.x + (other.x - node.x) * pulsePos;
-          const py = node.y + (other.y - node.y) * pulsePos;
-          ctx.globalAlpha = 0.6 * (1 - Math.abs(pulsePos - 0.5) * 2);
-          ctx.fillStyle = "#FCA311";
-          ctx.beginPath();
-          ctx.arc(px, py, 1.5, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalAlpha = 1;
-        });
+        ctx.globalAlpha = 0.6 * Math.sin(pulsePos * Math.PI);
+        ctx.fillStyle = '#FCA311';
+        ctx.beginPath(); ctx.arc(px, py, 2 * ringScale, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
       });
 
-      N.forEach((node) => {
-        const pulse = Math.sin(t * 1.2 + node.pulseOffset) * 0.3 + 0.7;
-        const g = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, node.size * 4);
-        g.addColorStop(0, `rgba(252,163,17,${0.3 * pulse})`);
-        g.addColorStop(1, "rgba(252,163,17,0)");
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, node.size * 4, 0, Math.PI * 2);
-        ctx.fill();
+      nodes.forEach((n, i) => {
+        const pulse = Math.sin(t * 1.4 + n.pulse) * 0.35 + 0.65;
+        const isCenter = i === 0;
+        const glowR = n.r * (isCenter ? 8 : 5);
+        const grd = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
+        grd.addColorStop(0, `rgba(252,163,17,${isCenter ? 0.35 : 0.18})`);
+        grd.addColorStop(1, 'rgba(252,163,17,0)');
+        ctx.fillStyle = grd;
+        ctx.beginPath(); ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2); ctx.fill();
 
-        ctx.fillStyle = node.isBrain
-          ? `rgba(252,163,17,${0.8 + pulse * 0.2})`
-          : `rgba(252,163,17,${0.5 + pulse * 0.3})`;
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, node.size * pulse, 0, Math.PI * 2);
-        ctx.fill();
+        const coreOp = isCenter ? 0.95 : (0.55 + pulse * 0.35);
+        ctx.fillStyle = `rgba(252,163,17,${coreOp})`;
+        ctx.beginPath(); ctx.arc(n.x, n.y, n.r * (isCenter ? 1 : pulse), 0, Math.PI * 2); ctx.fill();
       });
 
-      const ringR = 180 + Math.sin(t * 0.5) * 10;
-      const ring = ctx.createRadialGradient(cx, cy, ringR - 20, cx, cy, ringR + 20);
-      ring.addColorStop(0, "rgba(252,163,17,0)");
-      ring.addColorStop(0.5, `rgba(252,163,17,${0.04 + Math.sin(t * 0.5) * 0.02})`);
-      ring.addColorStop(1, "rgba(252,163,17,0)");
-      ctx.fillStyle = ring;
-      ctx.beginPath();
-      ctx.arc(cx, cy, ringR + 20, 0, Math.PI * 2);
-      ctx.fill();
+      const ringR = 210 * ringScale + Math.sin(t * 0.4) * 8;
+      const rg = ctx.createRadialGradient(CX, CY, ringR - 12, CX, CY, ringR + 12);
+      rg.addColorStop(0, 'rgba(252,163,17,0)');
+      rg.addColorStop(0.5, `rgba(252,163,17,${0.05 + Math.sin(t * 0.5) * 0.025})`);
+      rg.addColorStop(1, 'rgba(252,163,17,0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.arc(CX, CY, ringR + 12, 0, Math.PI * 2); ctx.fill();
     };
 
-    frame.current = requestAnimationFrame(render);
+    raf = requestAnimationFrame(render);
     return () => {
-      cancelAnimationFrame(frame.current);
-      canvas.removeEventListener("mousemove", onMouse);
+      cancelAnimationFrame(raf);
+      canvas.removeEventListener('mousemove', onMove);
     };
-  }, [width, height]);
+  }, [size]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={width}
-      height={height}
-      aria-hidden
-      style={{ display: "block", maxWidth: "100%" }}
-    />
+    <div
+      ref={containerRef}
+      className={`creature-wrap ${className}`.trim()}
+      style={{ width: '100%', maxWidth: explicitSize ?? 460 }}
+    >
+      <canvas
+        ref={canvasRef}
+        className="hero-creature hero-anim"
+        width={size}
+        height={size}
+        style={{ display: 'block', width: '100%', height: 'auto', opacity: 0 }}
+        aria-hidden
+      />
+    </div>
   );
 }

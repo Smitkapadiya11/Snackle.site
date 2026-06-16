@@ -1,204 +1,163 @@
-"use client";
+'use client';
+import { useEffect, useRef } from 'react';
 
-import { useEffect, useRef, useCallback } from "react";
-
-interface Props {
-  density?: number;
-  dotColor?: string;
-  lineColor?: string;
-  mouseRadius?: number;
-  maxOpacity?: number;
-  showLines?: boolean;
+function getMobileConfig() {
+  const isMobile = window.innerWidth < 768;
+  return {
+    isMobile,
+    SPACING: isMobile ? 44 : 30,
+    MOUSE_R: isMobile ? 80 : 180,
+    BASE_OPACITY: isMobile ? 0.12 : 0.10,
+    HOVER_OPACITY: isMobile ? 0.50 : 0.80,
+    BASE_SIZE: isMobile ? 1.2 : 1.0,
+    HOVER_SIZE: isMobile ? 2.5 : 3.5,
+    SHOW_LINES: !isMobile,
+    LERP: isMobile ? 0.15 : 0.09,
+  };
 }
 
-export function GridCanvas({
-  density = 34,
-  dotColor = "#FCA311",
-  lineColor = "#FCA311",
-  mouseRadius = 160,
-  maxOpacity = 0.22,
-  showLines = true,
-}: Props) {
+export function GridCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouse = useRef({ x: -9999, y: -9999, smoothX: -9999, smoothY: -9999 });
-  const dots = useRef<
-    Array<{
-      x: number;
-      y: number;
-      baseOp: number;
-      op: number;
-      size: number;
-      pulseOffset: number;
-    }>
-  >([]);
-  const frame = useRef<number>(0);
 
-  const buildGrid = useCallback(
-    (canvas: HTMLCanvasElement) => {
-      const cols = Math.ceil(canvas.width / density) + 2;
-      const rows = Math.ceil(canvas.height / density) + 2;
-      dots.current = [];
+  useEffect(() => {
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext('2d')!;
+    let W = window.innerWidth, H = window.innerHeight;
+    let mouse = { x: -999, y: -999, sx: -999, sy: -999 };
+    let raf: number;
+    let config = getMobileConfig();
+
+    type Dot = { x: number; y: number; op: number; phase: number };
+    let dots: Dot[] = [];
+
+    const build = () => {
+      config = getMobileConfig();
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+      dots = [];
+      const cols = Math.ceil(W / config.SPACING) + 1;
+      const rows = Math.ceil(H / config.SPACING) + 1;
       for (let r = 0; r <= rows; r++) {
         for (let c = 0; c <= cols; c++) {
-          const xOffset = r % 2 === 0 ? 0 : density / 2;
-          dots.current.push({
-            x: c * density + xOffset,
-            y: r * density,
-            baseOp: 0.06 + Math.random() * 0.08,
+          const xOff = (r % 2) * (config.SPACING / 2);
+          dots.push({
+            x: c * config.SPACING + xOff,
+            y: r * config.SPACING,
             op: 0,
-            size: 0.8 + Math.random() * 1.2,
-            pulseOffset: Math.random() * Math.PI * 2,
+            phase: Math.random() * Math.PI * 2,
           });
         }
       }
-    },
-    [density],
-  );
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d", { alpha: true });
-    if (!ctx) return;
-    let animRunning = true;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      buildGrid(canvas);
     };
-    resize();
-    window.addEventListener("resize", resize);
 
-    const startTime = performance.now();
-    const FADE_DURATION = 2000;
+    build();
+    window.addEventListener('resize', build);
 
-    const onMouseMove = (e: MouseEvent) => {
-      mouse.current.x = e.clientX;
-      mouse.current.y = e.clientY;
+    const onMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; };
+    const onTouch = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        mouse.x = e.touches[0].clientX;
+        mouse.y = e.touches[0].clientY;
+      }
     };
-    window.addEventListener("mousemove", onMouseMove, { passive: true });
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('touchmove', onTouch, { passive: true });
+    window.addEventListener('touchstart', onTouch, { passive: true });
 
-    const ripples: Array<{ x: number; y: number; t: number }> = [];
-    const onClick = (e: MouseEvent) => {
-      ripples.push({ x: e.clientX, y: e.clientY, t: 0 });
-    };
-    window.addEventListener("click", onClick);
+    const ripples: { x: number; y: number; r: number; op: number }[] = [];
+    const onClick = (e: MouseEvent) => ripples.push({ x: e.clientX, y: e.clientY, r: 0, op: 0.8 });
+    window.addEventListener('click', onClick);
 
-    const hexParse = (hex: string) => ({
-      r: parseInt(hex.slice(1, 3), 16),
-      g: parseInt(hex.slice(3, 5), 16),
-      b: parseInt(hex.slice(5, 7), 16),
-    });
-    const dc = hexParse(dotColor);
-    const lc = hexParse(lineColor);
-    const LERP = 0.08;
+    const t0 = performance.now();
 
     const render = (now: number) => {
-      if (!animRunning) return;
-      frame.current = requestAnimationFrame(render);
+      raf = requestAnimationFrame(render);
+      ctx.clearRect(0, 0, W, H);
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      mouse.current.smoothX += (mouse.current.x - mouse.current.smoothX) * LERP;
-      mouse.current.smoothY += (mouse.current.y - mouse.current.smoothY) * LERP;
-      const smx = mouse.current.smoothX;
-      const smy = mouse.current.smoothY;
-
-      const elapsed = now - startTime;
-      const fadeProgress = Math.min(elapsed / FADE_DURATION, 1);
+      mouse.sx += (mouse.x - mouse.sx) * config.LERP;
+      mouse.sy += (mouse.y - mouse.sy) * config.LERP;
 
       for (let i = ripples.length - 1; i >= 0; i--) {
-        ripples[i].t += 0.03;
-        if (ripples[i].t > 1) ripples.splice(i, 1);
-      }
-
-      if (showLines) {
-        const lineThreshold = density * 1.6;
-        ctx.lineWidth = 0.4;
-        for (let i = 0; i < dots.current.length; i++) {
-          const a = dots.current[i];
-          const distA = Math.sqrt((a.x - smx) ** 2 + (a.y - smy) ** 2);
-          if (distA > mouseRadius * 1.5) continue;
-
-          for (let j = i + 1; j < dots.current.length; j++) {
-            const b = dots.current[j];
-            const dist = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-            if (dist > lineThreshold) continue;
-
-            const distB = Math.sqrt((b.x - smx) ** 2 + (b.y - smy) ** 2);
-            const influence = Math.max(0, 1 - Math.min(distA, distB) / mouseRadius);
-            const lineOp = influence * 0.18 * fadeProgress;
-            if (lineOp < 0.005) continue;
-
-            ctx.strokeStyle = `rgba(${lc.r},${lc.g},${lc.b},${lineOp})`;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
-          }
-        }
+        ripples[i].r += 6;
+        ripples[i].op -= 0.015;
+        if (ripples[i].op <= 0) ripples.splice(i, 1);
       }
 
       const t = now * 0.001;
-      dots.current.forEach((d) => {
-        const dx = d.x - smx;
-        const dy = d.y - smy;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const mouseInfluence = Math.max(0, 1 - dist / mouseRadius);
+      const fadeIn = Math.min((now - t0) / 2000, 1);
 
-        let rippleInfluence = 0;
-        for (const rip of ripples) {
-          const rd = Math.sqrt((d.x - rip.x) ** 2 + (d.y - rip.y) ** 2);
-          const rippleR = rip.t * 300;
-          const ripDist = Math.abs(rd - rippleR);
-          if (ripDist < 30) {
-            rippleInfluence = Math.max(
-              rippleInfluence,
-              (1 - ripDist / 30) * (1 - rip.t) * 0.8,
-            );
+      if (config.SHOW_LINES) {
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < dots.length; i++) {
+          const a = dots[i];
+          const dax = a.x - mouse.sx, day = a.y - mouse.sy;
+          const daMouse = Math.sqrt(dax * dax + day * day);
+          if (daMouse > config.MOUSE_R * 1.4) continue;
+
+          for (let j = i + 1; j < dots.length; j++) {
+            const b = dots[j];
+            const dx = a.x - b.x, dy = a.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > config.SPACING * 1.7) continue;
+
+            const dbx = b.x - mouse.sx, dby = b.y - mouse.sy;
+            const dbMouse = Math.sqrt(dbx * dbx + dby * dby);
+            const inf = Math.max(0, 1 - Math.min(daMouse, dbMouse) / config.MOUSE_R);
+            const lineOp = inf * 0.20 * fadeIn;
+            if (lineOp < 0.01) continue;
+
+            ctx.strokeStyle = `rgba(252,163,17,${lineOp})`;
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
           }
         }
+      }
 
-        const pulse = Math.sin(t * 0.8 + d.pulseOffset) * 0.03;
-        const baseWithFade = d.baseOp * fadeProgress;
-        d.op = baseWithFade + mouseInfluence * maxOpacity + rippleInfluence * 0.5 + pulse;
-        d.op = Math.min(d.op, 0.95);
+      for (const d of dots) {
+        const dx = d.x - mouse.sx, dy = d.y - mouse.sy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const mouseInf = Math.max(0, 1 - dist / config.MOUSE_R);
 
-        const s = d.size + mouseInfluence * 2.5 + rippleInfluence * 4;
-        ctx.globalAlpha = d.op;
-        ctx.fillStyle = `rgb(${dc.r},${dc.g},${dc.b})`;
+        let ripInf = 0;
+        for (const rip of ripples) {
+          const rd = Math.sqrt((d.x - rip.x) ** 2 + (d.y - rip.y) ** 2);
+          const ring = Math.abs(rd - rip.r);
+          if (ring < 25) ripInf = Math.max(ripInf, (1 - ring / 25) * rip.op);
+        }
+
+        const breath = Math.sin(t * 0.6 + d.phase) * 0.025;
+        const op = (config.BASE_OPACITY + breath + mouseInf * (config.HOVER_OPACITY - config.BASE_OPACITY) + ripInf * 0.6) * fadeIn;
+        const size = config.BASE_SIZE + mouseInf * (config.HOVER_SIZE - config.BASE_SIZE) + ripInf * 5;
+
+        ctx.globalAlpha = Math.min(op, 0.92);
+        ctx.fillStyle = '#FCA311';
         ctx.beginPath();
-        ctx.arc(d.x, d.y, s, 0, Math.PI * 2);
+        ctx.arc(d.x, d.y, size, 0, Math.PI * 2);
         ctx.fill();
-      });
+      }
 
       ctx.globalAlpha = 1;
     };
 
-    frame.current = requestAnimationFrame(render);
+    raf = requestAnimationFrame(render);
 
     return () => {
-      animRunning = false;
-      cancelAnimationFrame(frame.current);
-      window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("click", onClick);
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', build);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('touchmove', onTouch);
+      window.removeEventListener('touchstart', onTouch);
+      window.removeEventListener('click', onClick);
     };
-  }, [buildGrid, dotColor, lineColor, mouseRadius, maxOpacity, showLines]);
+  }, []);
 
   return (
     <canvas
       ref={canvasRef}
       aria-hidden
       style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        pointerEvents: "none",
-        zIndex: 0,
+        position: 'fixed', top: 0, left: 0,
+        width: '100vw', height: '100vh',
+        pointerEvents: 'none', zIndex: 0,
       }}
     />
   );

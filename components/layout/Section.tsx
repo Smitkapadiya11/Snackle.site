@@ -4,24 +4,23 @@ interface SectionProps {
   id?: string;
   children: ReactNode;
   className?: string;
-  dark?: boolean;
   style?: React.CSSProperties;
 }
 
-export function Section({ id, children, className = "", dark = false, style }: SectionProps) {
+export function Section({ id, children, className = "", style }: SectionProps) {
   return (
     <section
       id={id}
       className={`snackle-section ${className}`}
       style={{
-        padding: "var(--section-py) var(--section-px)",
-        background: dark ? "var(--black)" : "var(--navy)",
+        padding: "80px 0",
+        background: "transparent",
         position: "relative",
         overflow: "hidden",
         ...style,
       }}
     >
-      <div className="container">{children}</div>
+      <div className="section-wrap">{children}</div>
     </section>
   );
 }
