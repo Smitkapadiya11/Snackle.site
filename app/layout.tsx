@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import { ToastProvider } from "@/components/ui/Toast";
 import { GridCanvas } from "@/components/art/GridCanvas";
+import { SiteShell } from "@/components/layout/SiteShell";
 import "./globals.css";
 
 const display = Bricolage_Grotesque({
@@ -40,9 +41,9 @@ export default function RootLayout({
       <body className="snackle min-h-full flex flex-col" style={{ background: "#080808" }}>
         <GridCanvas />
         <ToastProvider>
-          <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column" }}>
+          <SiteShell>
             {children}
-          </div>
+          </SiteShell>
         </ToastProvider>
       </body>
     </html>

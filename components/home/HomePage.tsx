@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Navigation } from "@/components/layout/Navigation";
 import { Footer } from "@/components/layout/Footer";
 import { IntelligenceCreature } from "@/components/art/IntelligenceCreature";
 import { useSiteAnimations } from "@/lib/animation/useSiteAnimations";
@@ -130,8 +129,6 @@ export default function HomePage() {
 
   return (
     <>
-      <Navigation />
-
       {/* Hero */}
       <section className="reveal-section hero-section">
         <div className="section-wrap">

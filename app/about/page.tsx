@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Navigation } from "@/components/layout/Navigation";
 import { Footer } from "@/components/layout/Footer";
 import { Section } from "@/components/layout/Section";
 import { useSiteAnimations } from "@/lib/animation/useSiteAnimations";
@@ -11,8 +10,6 @@ export default function AboutPage() {
 
   return (
     <>
-      <Navigation />
-
       <section
         className="reveal-section"
         style={{ position: "relative", zIndex: 1, paddingTop: 120, paddingBottom: 80 }}

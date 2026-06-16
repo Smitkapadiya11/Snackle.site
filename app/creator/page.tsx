@@ -1,6 +1,5 @@
 "use client";
 
-import { Navigation } from "@/components/layout/Navigation";
 import { Footer } from "@/components/layout/Footer";
 import { useSiteAnimations } from "@/lib/animation/useSiteAnimations";
 
@@ -9,9 +8,7 @@ export default function CreatorPage() {
 
   return (
     <>
-      <Navigation />
-
-      <section className="reveal-section" style={{ padding: "140px 0 80px", position: "relative", zIndex: 1 }}>
+      <section className="reveal-section" style={{ padding: "100px 0 80px", position: "relative", zIndex: 1 }}>
         <div className="section-wrap reveal-card">
           <p className="section-label anim-child">The Mind Behind Snackle</p>
           <h1
