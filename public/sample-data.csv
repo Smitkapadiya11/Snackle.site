@@ -1,0 +1,22 @@
+date,product_name,sku,units_sold,price,stock_on_hand
+2024-03-01,Face Serum Premium,FSP001,22,899,340
+2024-03-02,Face Serum Premium,FSP001,25,899,318
+2024-03-03,Face Serum Premium,FSP001,20,899,298
+2024-03-04,Face Serum Premium,FSP001,23,899,275
+2024-03-05,Face Serum Premium,FSP001,21,899,254
+2024-03-06,Face Serum Premium,FSP001,24,899,230
+2024-03-07,Face Serum Premium,FSP001,22,899,208
+2024-03-01,Moisturiser 50ml,MOI001,3,349,350
+2024-03-02,Moisturiser 50ml,MOI001,2,349,348
+2024-03-03,Moisturiser 50ml,MOI001,2,349,346
+2024-03-04,Moisturiser 50ml,MOI001,1,349,345
+2024-03-05,Moisturiser 50ml,MOI001,1,349,344
+2024-03-06,Moisturiser 50ml,MOI001,2,349,342
+2024-03-07,Moisturiser 50ml,MOI001,1,349,341
+2024-03-01,Vitamin C Toner,VCT001,8,599,290
+2024-03-02,Vitamin C Toner,VCT001,10,599,280
+2024-03-03,Vitamin C Toner,VCT001,12,599,268
+2024-03-04,Vitamin C Toner,VCT001,11,599,257
+2024-03-05,Vitamin C Toner,VCT001,13,599,244
+2024-03-06,Vitamin C Toner,VCT001,14,599,230
+2024-03-07,Vitamin C Toner,VCT001,15,599,215

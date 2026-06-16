@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Snackle — Inventory Intelligence Platform
 
-## Getting Started
+Built by **Smit Kapadiya** (21) · CHARUSAT University · Surat, Gujarat 🇮🇳
 
-First, run the development server:
+> The first AI-powered inventory intelligence model built specifically for Indian D2C brands.
 
+## Snackle 1.0 — 9 Algorithms
+- Monte Carlo Simulation (10,000 demand paths)
+- Holt-Winters Ensemble Forecasting
+- Statistical Safety Stock (lead time variability)
+- EOQ + Backorder Optimization
+- ABC-XYZ 9-cell Matrix
+- Isolation Forest Anomaly Detection
+- CUSUM Change Detection
+- Price Elasticity Markdown Optimization
+- GMROI Profitability Analysis
+
+## Stack
+- **Frontend**: Next.js 14 + Tailwind + Anime.js
+- **AI Engine**: Python FastAPI + NumPy + SciPy + Statsmodels + Scikit-learn
+- **AI Summaries**: DeepSeek R1 via Groq API
+- **Database**: Supabase (PostgreSQL)
+- **Deploy**: Vercel (frontend) + Railway (engine)
+
+## Local Development
+
+### Frontend
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Python Engine
+```bash
+cd engine
+pip install -r requirements.txt
+python main.py
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment Variables
+Copy `.env.example` → `.env.local` and fill in your keys.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy
+- Frontend → Vercel (auto-deploys from GitHub main branch)
+- Engine → Railway (deploy from /engine directory)
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+*Made in India. By Indian. For Indian brands.*
