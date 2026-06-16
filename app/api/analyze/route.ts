@@ -112,19 +112,22 @@ async function runPythonAnalysis(
 
 export async function POST(req: NextRequest) {
   try {
-    const {
-      raw_products,
-      brand_context,
-    }: {
-      raw_products: Array<{
-        name: string;
-        sku: string;
-        price: number;
-        current_stock: number;
-        sales_history: { date: string; units_sold: number }[];
-      }>;
-      brand_context: BrandContext;
-    } = await req.json();
+    const body = await req.json();
+    const raw_products: Array<{
+      name: string;
+      sku: string;
+      price: number;
+      current_stock: number;
+      sales_history: { date: string; units_sold: number }[];
+    }> = body.raw_products ?? body.products;
+    const brand_context: BrandContext = body.brand_context;
+
+    if (!raw_products?.length || !brand_context) {
+      return NextResponse.json(
+        { success: false, error: "Missing raw_products (or products) and brand_context." },
+        { status: 400 },
+      );
+    }
 
     let result;
 
