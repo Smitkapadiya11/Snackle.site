@@ -12,24 +12,14 @@ export default function SignInPage() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      <div
-        style={{
-          flex: "1 1 60%",
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          padding: 48,
-          background: "radial-gradient(ellipse 80% 60% at 30% 50%, rgba(20,33,61,0.8) 0%, #000 70%)",
-        }}
-      >
+    <div className="auth-layout">
+      <div className="auth-hero">
         <div style={{ position: "relative", zIndex: 1, maxWidth: 480 }}>
           <Logo size="md" showTagline />
           <h1
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 36,
+              fontSize: "clamp(28px, 4vw, 36px)",
               fontWeight: 700,
               marginTop: 48,
               marginBottom: 24,
@@ -39,9 +29,9 @@ export default function SignInPage() {
           </h1>
           <p
             style={{
-              fontSize: 22,
+              fontSize: "clamp(16px, 2.5vw, 22px)",
               fontStyle: "italic",
-              color: "var(--amber)",
+              color: "var(--c-accent)",
               lineHeight: 1.5,
             }}
           >
@@ -50,23 +40,16 @@ export default function SignInPage() {
         </div>
       </div>
 
-      <div
-        style={{
-          flex: "1 1 40%",
-          background: "var(--navy)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 48,
-        }}
-      >
+      <div className="auth-form-wrap">
         <div style={{ width: "100%", maxWidth: 360 }}>
+          <Logo size="sm" />
           <h2
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 28,
+              fontSize: "clamp(22px, 4vw, 28px)",
               fontWeight: 700,
               marginBottom: 32,
+              marginTop: 24,
             }}
           >
             Sign In
@@ -80,11 +63,13 @@ export default function SignInPage() {
               onFocus={showComingSoon}
               style={{
                 padding: "14px 16px",
-                borderRadius: "var(--r-md)",
-                border: "1px solid var(--border)",
-                background: "rgba(0,0,0,0.3)",
-                color: "var(--white)",
-                fontSize: 15,
+                borderRadius: 12,
+                border: "1px solid var(--c-card-border)",
+                background: "rgba(255,255,255,0.04)",
+                color: "var(--c-text)",
+                fontSize: 16,
+                outline: "none",
+                width: "100%",
               }}
             />
             <input
@@ -94,48 +79,41 @@ export default function SignInPage() {
               onFocus={showComingSoon}
               style={{
                 padding: "14px 16px",
-                borderRadius: "var(--r-md)",
-                border: "1px solid var(--border)",
-                background: "rgba(0,0,0,0.3)",
-                color: "var(--white)",
-                fontSize: 15,
+                borderRadius: 12,
+                border: "1px solid var(--c-card-border)",
+                background: "rgba(255,255,255,0.04)",
+                color: "var(--c-text)",
+                fontSize: 16,
+                outline: "none",
+                width: "100%",
               }}
             />
             <button
               type="button"
               onClick={showComingSoon}
-              className="btn btn-primary"
-              style={{ width: "100%", padding: 14, opacity: 0.6, cursor: "not-allowed" }}
+              className="btn-primary"
+              style={{ width: "100%", justifyContent: "center", opacity: 0.7, cursor: "not-allowed" }}
             >
               Sign In — Coming Soon
             </button>
             <button
               type="button"
               onClick={showComingSoon}
-              style={{
-                width: "100%",
-                padding: 14,
-                borderRadius: "var(--r-full)",
-                border: "1px solid var(--border)",
-                background: "transparent",
-                color: "var(--light)",
-                fontSize: 14,
-                cursor: "not-allowed",
-                opacity: 0.6,
-              }}
+              className="btn-ghost"
+              style={{ width: "100%", justifyContent: "center", cursor: "not-allowed", opacity: 0.6 }}
             >
               Continue with Google
             </button>
           </div>
 
-          <p style={{ textAlign: "center", marginTop: 24, fontSize: 14, color: "var(--light)", opacity: 0.6 }}>
+          <p style={{ textAlign: "center", marginTop: 28, fontSize: 14, color: "var(--c-text-dim)" }}>
             New to Snackle?{" "}
-            <Link href="/sign-up" style={{ color: "var(--amber)", textDecoration: "none" }}>
+            <Link href="/sign-up" style={{ color: "var(--c-accent)", textDecoration: "none", fontWeight: 600 }}>
               Sign up →
             </Link>
           </p>
           <p style={{ textAlign: "center", marginTop: 16 }}>
-            <Link href="/use" style={{ color: "var(--amber)", fontSize: 14, textDecoration: "none" }}>
+            <Link href="/use" style={{ color: "var(--c-accent)", fontSize: 14, textDecoration: "none", fontWeight: 600 }}>
               Try Snackle free — no account needed →
             </Link>
           </p>

@@ -174,6 +174,7 @@ body.snackle {
   font-family: var(--font-body), "Plus Jakarta Sans", sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .snackle ::selection {
@@ -461,7 +462,7 @@ body.snackle {
   background: var(--c-card-bg);
   border-left: 1px solid var(--c-card-border);
   padding: 32px 24px;
-  height: 100vh;
+  height: 100%;
   overflow: auto;
 }
 .console-main {
@@ -509,8 +510,12 @@ body.snackle {
 
 .console-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 32px 24px;
+  padding-bottom: max(32px, env(safe-area-inset-bottom, 0px));
 }
 
 .console-welcome {
@@ -529,9 +534,10 @@ body.snackle {
 .console-welcome-creature {
   width: 280px;
   height: 280px;
-  max-width: 70vw;
-  max-height: 70vw;
+  max-width: 70vmin;
+  max-height: 70vmin;
   margin: 0 auto 24px;
+  flex-shrink: 0;
 }
 
 .console-welcome-title {
@@ -618,7 +624,7 @@ body.snackle {
   max-width: 680px;
   margin: 0 auto 12px;
   display: flex;
-  gap: 16;
+  gap: 16px;
 }
 
 .console-q-num {
@@ -965,6 +971,7 @@ body.snackle {
     flex-direction: column !important;
     padding-top: 64px !important;
     height: 100dvh !important;
+    overflow: hidden !important;
   }
   .console-sidebar {
     display: none !important;
@@ -974,21 +981,109 @@ body.snackle {
   }
   .console-main {
     height: auto !important;
-    flex: 1;
-    min-height: 0;
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow: hidden;
   }
   .console-main-header {
-    padding: 16px 18px;
+    padding: 14px 16px;
+  }
+  .console-main-header h1 {
+    font-size: 18px !important;
+  }
+  .console-main-header p {
+    font-size: 11px !important;
   }
   .console-scroll {
-    padding: 20px 16px;
+    padding: 16px 14px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  }
+  .console-welcome {
+    padding: 24px 16px;
+    justify-content: flex-start;
   }
   .console-welcome-creature {
-    width: 220px;
-    height: 220px;
+    width: 200px;
+    height: 200px;
+    margin-bottom: 20px;
+  }
+  .console-welcome-title {
+    font-size: clamp(22px, 6vw, 32px) !important;
+  }
+  .console-welcome-desc {
+    font-size: 14px !important;
+    margin-bottom: 24px !important;
+  }
+  .console-steps {
+    gap: 0;
+    margin-top: 4px;
+  }
+  .console-step {
+    padding: 6px 12px;
+  }
+  .console-step-connector {
+    width: 16px;
+  }
+  .console-processing {
+    padding: 24px 16px;
   }
   .sidebar-mobile-hide { display: none !important; }
   .console-question-progress { display: none !important; }
+  .console-lang-btn { font-size: 11px !important; padding: 5px 10px !important; }
+  .console-input-wrap { padding: 10px 12px; }
+  .console-qa-card { padding: 12px 14px; margin-bottom: 8px; }
+  .console-model-btn { font-size: 12px !important; padding: 6px 12px !important; }
+}
+
+/* Auth pages */
+.auth-layout {
+  display: flex;
+  min-height: 100vh;
+  padding-top: 64px;
+}
+
+.auth-hero {
+  flex: 1 1 60%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px;
+  background: radial-gradient(ellipse 80% 60% at 30% 50%, rgba(20,33,61,0.8) 0%, #000 70%);
+}
+
+.auth-form-wrap {
+  flex: 1 1 40%;
+  background: rgba(8,8,8,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  border-left: 1px solid rgba(255,255,255,0.06);
+}
+
+@media (max-width: 767px) {
+  .auth-layout {
+    flex-direction: column;
+    padding-top: 80px;
+  }
+  .auth-hero {
+    display: none !important;
+  }
+  .auth-form-wrap {
+    flex: 1;
+    border-left: none;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 32px 24px 48px;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 400px) {
+  .auth-form-wrap {
+    padding: 24px 16px 40px;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -1022,9 +1117,10 @@ body.snackle {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding-bottom: 2px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   flex: 1;
   min-width: 0;
 }
@@ -1052,6 +1148,7 @@ body.snackle {
 .scroll-container {
   -webkit-overflow-scrolling: touch;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .snackle * {
@@ -1072,16 +1169,12 @@ body.snackle {
   max-width: 460px;
   margin: 0 auto;
 }
-.creature-wrap canvas {
+.creature-wrap canvas,
+.creature-wrap svg {
   display: block;
   width: 100% !important;
   height: auto !important;
-}
-
-.creature-wrap canvas {
-  display: block;
-  width: 100% !important;
-  height: auto !important;
+  max-width: 100%;
 }
 
 /* Results page */
@@ -1174,6 +1267,8 @@ body.snackle {
 }
 
 .results-sort {
+  -webkit-appearance: none;
+  appearance: none;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--c-card-border);
   border-radius: 12px;
@@ -1182,6 +1277,7 @@ body.snackle {
   font-size: 14px;
   min-height: 44px;
   min-width: 160px;
+  cursor: pointer;
 }
 
 .results-empty {
@@ -1327,6 +1423,7 @@ body.snackle {
     flex-direction: column;
     align-items: stretch;
     padding: 12px;
+    gap: 10px;
   }
   .results-sort {
     width: 100%;
@@ -1337,15 +1434,28 @@ body.snackle {
   .product-card-title {
     font-size: 16px;
   }
+  .question-card {
+    padding: 20px 18px;
+    margin: 16px 0 0;
+    border-radius: 16px;
+  }
+  .question-text {
+    font-size: 16px !important;
+    min-height: auto !important;
+  }
 }
 
 @media (max-width: 479px) {
   .product-metrics-grid {
     grid-template-columns: 1fr;
   }
+  /* Keep min 16px padding on very small screens */
   .results-main {
     padding-left: 0;
     padding-right: 0;
+  }
+  .results-page .section-wrap {
+    padding: 0 12px;
   }
 }
 
