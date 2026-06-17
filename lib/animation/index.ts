@@ -18,13 +18,23 @@ export async function scrollReveal(selector: string, options: {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) return;
+      entry.target.classList.add('in-view');
       const children = entry.target.querySelectorAll(selector + ' .anim-child, ' + selector);
       const targets = children.length > 0 ? Array.from(children) : [entry.target];
-      animate(targets, {
-        opacity: [0, 1], translateY: [50, 0], scale: [0.97, 1],
-        delay: stagger(staggerMs, { start: delay }),
-        duration, easing: 'easeOutExpo',
-      });
+
+      try {
+        animate(targets, {
+          opacity: [0, 1], translateY: [50, 0], scale: [0.97, 1],
+          delay: stagger(staggerMs, { start: delay }),
+          duration, easing: 'easeOutExpo',
+        });
+      } catch {
+        targets.forEach((el) => {
+          (el as HTMLElement).style.opacity = '1';
+          (el as HTMLElement).style.transform = 'none';
+        });
+      }
+
       if (once) observer.unobserve(entry.target);
     });
   }, { threshold: 0.1 });

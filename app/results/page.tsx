@@ -102,7 +102,7 @@ export default function ResultsPage() {
   return (
     <div className="results-page">
       <main className="results-main section-wrap">
-        <header className="results-hero glass" style={{ opacity: 0 }}>
+        <header className="results-hero glass">
           <div className="results-hero-text">
             <p className="section-label">Intelligence Report</p>
             <h1 className="results-title">{result.brand_context.brand_name}</h1>
@@ -127,7 +127,7 @@ export default function ResultsPage() {
             { label: "Opportunity", value: counts.OPPORTUNITY, color: "#22c55e" },
             { label: "Healthy", value: counts.HEALTHY, color: "#3b82f6" },
           ].map((kpi) => (
-            <div key={kpi.label} className="kpi-card glass" style={{ opacity: 0 }}>
+            <div key={kpi.label} className="kpi-card glass">
               <div className="kpi-label">{kpi.label}</div>
               <div className="kpi-value" data-target={kpi.value} style={{ color: kpi.color }}>
                 0
@@ -136,7 +136,7 @@ export default function ResultsPage() {
           ))}
         </div>
 
-        <div className="results-toolbar glass" style={{ opacity: 0 }}>
+        <div className="results-toolbar glass">
           <div className="filter-tabs-scroll">
             {FILTERS.map((f) => (
               <button

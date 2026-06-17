@@ -43,7 +43,6 @@ export default function SnackleProductCard({
       style={{
         borderLeft: `4px solid ${style.border}`,
         background: style.bg,
-        opacity: 0,
       }}
     >
       <div className="product-card-header">

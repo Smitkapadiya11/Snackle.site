@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/brand/Logo";
 import { IntelligenceCreature } from "@/components/art/IntelligenceCreature";
+import { SectionLabel } from "@/components/layout/SectionLabel";
+import { UploadIcon } from "@/components/ui/UploadIcon";
 import { parseCSV, groupByProduct, ParsedRow } from "@/lib/parsers/csv-parser";
 import { parseExcel } from "@/lib/parsers/excel-parser";
 import { autoDetectColumns } from "@/components/upload/ColumnMapper";
@@ -31,6 +32,140 @@ type Product = {
 interface AnsweredQ {
   question: string;
   answer: string;
+}
+
+function StepIndicators({
+  uploadedFile,
+  selectedModel,
+}: {
+  uploadedFile: File | null;
+  selectedModel: string;
+}) {
+  const steps = [
+    { n: 1, label: "Upload data", done: !!uploadedFile },
+    { n: 2, label: "Select model", done: !!selectedModel },
+    { n: 3, label: "12 questions", done: false },
+  ];
+
+  return (
+    <div className="console-steps">
+      {steps.map((step, i) => (
+        <Fragment key={step.n}>
+          <div
+            className="console-step"
+            style={{
+              background: step.done ? "rgba(34,197,94,0.10)" : "rgba(255,255,255,0.04)",
+              border: `1px solid ${step.done ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.08)"}`,
+            }}
+          >
+            <div
+              className="console-step-num"
+              style={{
+                background: step.done ? "#22c55e" : "rgba(252,163,17,0.15)",
+                border: `1.5px solid ${step.done ? "#22c55e" : "rgba(252,163,17,0.4)"}`,
+                color: step.done ? "#000" : "#FCA311",
+              }}
+            >
+              {step.done ? "✓" : step.n}
+            </div>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                whiteSpace: "nowrap",
+                color: step.done ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.6)",
+              }}
+            >
+              {step.label}
+            </span>
+          </div>
+          {i < 2 && <div className="console-step-connector" />}
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
+function IntelligenceTips() {
+  return (
+    <div style={{ paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <SectionLabel>Intelligence Tips</SectionLabel>
+      {[
+        "More historical data → better predictions",
+        "Include stockout periods in your CSV",
+        "Answer naturally in any Indian language",
+      ].map((tip, i) => (
+        <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 10 }}>
+          <div
+            style={{
+              width: 4,
+              height: 4,
+              borderRadius: "50%",
+              background: "var(--c-accent)",
+              opacity: 0.5,
+              flexShrink: 0,
+              marginTop: 7,
+            }}
+          />
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>{tip}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FileUploadZone({
+  uploadedFile,
+  productCount,
+  onFileUpload,
+  inputId,
+}: {
+  uploadedFile: File | null;
+  productCount: number;
+  onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  inputId: string;
+}) {
+  return (
+    <div
+      className="console-upload-zone"
+      style={{
+        border: `1.5px dashed ${uploadedFile ? "rgba(252,163,17,0.5)" : "rgba(229,229,229,0.15)"}`,
+        borderRadius: 14,
+        padding: 20,
+        background: uploadedFile ? "rgba(252,163,17,0.05)" : "transparent",
+      }}
+    >
+      {!uploadedFile ? (
+        <div style={{ textAlign: "center" }}>
+          <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}>
+            <UploadIcon uploaded={false} />
+          </div>
+          <p style={{ fontSize: 13, color: "var(--c-text-dim)" }}>Drop your CSV or Excel file</p>
+          <p style={{ fontSize: 11, color: "var(--c-accent)", opacity: 0.6, marginTop: 6 }}>.csv · .xlsx · .xls</p>
+          <label htmlFor={inputId} className="console-upload-btn">
+            Choose File
+          </label>
+          <input id={inputId} type="file" accept=".csv,.xlsx,.xls" hidden onChange={onFileUpload} />
+        </div>
+      ) : (
+        <div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <UploadIcon uploaded />
+            <div>
+              <p style={{ fontSize: 13, color: "var(--c-text)", fontWeight: 600, wordBreak: "break-all" }}>
+                {uploadedFile.name}
+              </p>
+              <p style={{ fontSize: 11, color: "var(--c-accent)", marginTop: 2 }}>{productCount} products detected</p>
+            </div>
+          </div>
+          <label htmlFor={`${inputId}-change`} style={{ fontSize: 11, color: "var(--c-accent)", cursor: "pointer", marginTop: 10, display: "block" }}>
+            Change File
+          </label>
+          <input id={`${inputId}-change`} type="file" accept=".csv,.xlsx,.xls" hidden onChange={onFileUpload} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function SnackleConsole() {
@@ -77,6 +212,10 @@ export default function SnackleConsole() {
           translateY: [24, 0],
           duration: 600,
           easing: "easeOutExpo",
+        });
+      }).catch(() => {
+        document.querySelectorAll(".question-card").forEach((el) => {
+          (el as HTMLElement).style.opacity = "1";
         });
       });
     }
@@ -197,104 +336,55 @@ export default function SnackleConsole() {
 
   return (
     <div className="console-layout">
-      <aside
-        className="console-sidebar"
-        style={{
-          width: 320,
-          background: "rgba(0,0,0,0.6)",
-          backdropFilter: "blur(20px)",
-          borderRight: "1px solid rgba(252,163,17,0.12)",
-        }}
-      >
-        <Logo size="sm" showTagline />
-        <div style={{ height: 1, background: "rgba(252,163,17,0.1)", margin: "8px 0" }} />
-
-        <div
+      <div className="console-mobile-bar">
+        <label
+          htmlFor="mobile-file-input"
+          className="console-mobile-upload"
           style={{
-            border: `1.5px dashed ${uploadedFile ? "rgba(252,163,17,0.5)" : "rgba(229,229,229,0.15)"}`,
-            borderRadius: 14,
-            padding: 20,
-            background: uploadedFile ? "rgba(252,163,17,0.05)" : "transparent",
+            background: uploadedFile ? "rgba(34,197,94,0.08)" : "transparent",
+            borderColor: uploadedFile ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.12)",
           }}
         >
-          {!uploadedFile ? (
-            <div style={{ textAlign: "center" }}>
-              <div
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 12,
-                  background: "rgba(252,163,17,0.1)",
-                  border: "1px solid rgba(252,163,17,0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 12px",
-                  fontSize: 20,
-                }}
-              >
-                📊
-              </div>
-              <p style={{ fontSize: 13, color: "var(--light)", opacity: 0.7 }}>Drop your CSV or Excel file</p>
-              <p style={{ fontSize: 11, color: "var(--amber)", opacity: 0.6, marginTop: 6 }}>.csv · .xlsx · .xls</p>
-              <label
-                htmlFor="file-input"
-                style={{
-                  display: "inline-block",
-                  marginTop: 14,
-                  padding: "8px 18px",
-                  background: "rgba(252,163,17,0.12)",
-                  border: "1px solid rgba(252,163,17,0.3)",
-                  borderRadius: 999,
-                  fontSize: 12,
-                  color: "var(--amber)",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Choose File
-              </label>
-              <input id="file-input" type="file" accept=".csv,.xlsx,.xls" hidden onChange={handleFileUpload} />
-            </div>
-          ) : (
-            <div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    background: "rgba(34,197,94,0.15)",
-                    border: "1px solid rgba(34,197,94,0.3)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  ✓
-                </div>
-                <div>
-                  <p style={{ fontSize: 13, color: "var(--white)", fontWeight: 600, wordBreak: "break-all" }}>
-                    {uploadedFile.name}
-                  </p>
-                  <p style={{ fontSize: 11, color: "var(--amber)", marginTop: 2 }}>{products.length} products detected</p>
-                </div>
-              </div>
-              <label htmlFor="file-input-change" style={{ fontSize: 11, color: "var(--amber)", cursor: "pointer", marginTop: 10, display: "block" }}>
-                Change File
-              </label>
-              <input id="file-input-change" type="file" accept=".csv,.xlsx,.xls" hidden onChange={handleFileUpload} />
-            </div>
-          )}
-        </div>
+          <UploadIcon uploaded={!!uploadedFile} />
+          <span>{uploadedFile ? `${products.length} products` : "Upload CSV"}</span>
+          <input id="mobile-file-input" type="file" accept=".csv,.xlsx,.xls" hidden onChange={handleFileUpload} />
+        </label>
 
         {currentQuestion > 0 && (
-          <div className="console-question-progress" style={{ marginTop: 8 }}>
+          <>
+            <div style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2 }}>
+              <div
+                style={{
+                  width: `${(Math.min(currentQuestion, 12) / 12) * 100}%`,
+                  height: "100%",
+                  background: "linear-gradient(to right, #14213D, #FCA311)",
+                  borderRadius: 2,
+                  transition: "width 0.5s ease",
+                }}
+              />
+            </div>
+            <span style={{ fontSize: 12, color: "#FCA311", fontWeight: 600, whiteSpace: "nowrap" }}>
+              {Math.min(currentQuestion, 12)}/12
+            </span>
+          </>
+        )}
+      </div>
+
+      <aside className="console-sidebar">
+        <FileUploadZone
+          uploadedFile={uploadedFile}
+          productCount={products.length}
+          onFileUpload={handleFileUpload}
+          inputId="file-input"
+        />
+
+        {currentQuestion > 0 && (
+          <div className="console-question-progress">
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontSize: 11, color: "var(--light)", opacity: 0.5, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 11, color: "var(--c-text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Setup Progress
               </span>
-              <span style={{ fontSize: 12, color: "var(--amber)", fontWeight: 600 }}>
+              <span style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 600 }}>
                 {Math.min(currentQuestion, 12)}/12
               </span>
             </div>
@@ -323,45 +413,25 @@ export default function SnackleConsole() {
                       alignItems: "center",
                       justifyContent: "center",
                       fontSize: 9,
-                      color: "var(--amber)",
+                      color: "var(--c-accent)",
                     }}
                   >
                     {i < currentQuestion ? "✓" : i + 1}
                   </div>
-                  <span style={{ fontSize: 12, color: i < currentQuestion ? "var(--light)" : "rgba(229,229,229,0.3)" }}>{q}</span>
+                  <span style={{ fontSize: 12, color: i < currentQuestion ? "var(--c-text-dim)" : "rgba(229,229,229,0.3)" }}>{q}</span>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        <div className="sidebar-mobile-hide" style={{ marginTop: "auto", paddingTop: 20, borderTop: "1px solid rgba(229,229,229,0.06)" }}>
-          <p style={{ fontSize: 10, color: "var(--light)", opacity: 0.35, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
-            Intelligence Tips
-          </p>
-          {[
-            "More historical data → better predictions",
-            "Include stockout periods in your CSV",
-            "Answer naturally in any Indian language",
-          ].map((tip) => (
-            <p key={tip} style={{ fontSize: 12, color: "var(--light)", opacity: 0.5, lineHeight: 1.6, marginBottom: 6 }}>
-              — {tip}
-            </p>
-          ))}
+        <div className="sidebar-mobile-hide" style={{ marginTop: "auto" }}>
+          <IntelligenceTips />
         </div>
       </aside>
 
       <main className="console-main">
-        <div
-          style={{
-            padding: "20px 32px",
-            borderBottom: "1px solid var(--border)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            background: "rgba(0,0,0,0.4)",
-          }}
-        >
+        <div className="console-main-header">
           <div>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700 }}>Snackle Console</h1>
             <p style={{ fontSize: 13, color: "var(--c-text-dim)" }}>Inventory Intelligence · Snackle 1.0</p>
@@ -370,36 +440,17 @@ export default function SnackleConsole() {
             <button
               type="button"
               onClick={() => setShowModelPicker(!showModelPicker)}
+              className="console-model-btn"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 16px",
                 border: `1px solid ${selectedModel ? "rgba(252,163,17,0.5)" : "rgba(229,229,229,0.15)"}`,
-                borderRadius: 999,
                 background: selectedModel ? "rgba(252,163,17,0.08)" : "transparent",
-                color: selectedModel ? "var(--amber)" : "var(--light)",
-                cursor: "pointer",
-                fontSize: 13,
+                color: selectedModel ? "var(--c-accent)" : "var(--c-text-dim)",
               }}
             >
               {selectedModel ? "● Snackle 1.0" : "Select Model ▾"}
             </button>
             {showModelPicker && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  right: 0,
-                  marginTop: 8,
-                  background: "rgba(20,33,61,0.98)",
-                  border: "1px solid rgba(252,163,17,0.3)",
-                  borderRadius: 12,
-                  padding: 8,
-                  minWidth: 220,
-                  zIndex: 50,
-                }}
-              >
+              <div className="console-model-picker">
                 <button
                   type="button"
                   onClick={() => {
@@ -412,7 +463,7 @@ export default function SnackleConsole() {
                     background: "rgba(252,163,17,0.1)",
                     border: "none",
                     borderRadius: 8,
-                    color: "var(--white)",
+                    color: "var(--c-text)",
                     textAlign: "left",
                     cursor: "pointer",
                   }}
@@ -426,7 +477,7 @@ export default function SnackleConsole() {
         </div>
 
         {isProcessing ? (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40 }}>
+          <div className="console-processing">
             <div style={{ position: "relative", width: 200, height: 200, marginBottom: 48 }}>
               {[1, 2, 3].map((i) => (
                 <div
@@ -440,257 +491,108 @@ export default function SnackleConsole() {
                   }}
                 />
               ))}
-              <div
-                className="proc-core"
-                style={{
-                  position: "absolute",
-                  inset: "30%",
-                  borderRadius: "50%",
-                  background: "radial-gradient(circle, rgba(252,163,17,0.5), rgba(20,33,61,0.8))",
-                  border: "2px solid rgba(252,163,17,0.6)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 32,
-                }}
-              >
-                ⚡
-              </div>
+              <div className="proc-core">⚡</div>
             </div>
             <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, marginBottom: 12 }}>Snackle is thinking...</h3>
-            <p style={{ fontSize: 14, color: "var(--amber)", marginBottom: 40 }}>{procMessage}</p>
+            <p style={{ fontSize: 14, color: "var(--c-accent)", marginBottom: 40 }}>{procMessage}</p>
             <div style={{ width: "100%", maxWidth: 400 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                <span style={{ fontSize: 12, color: "var(--light)", opacity: 0.5 }}>Snackle 1.0</span>
-                <span style={{ fontSize: 12, color: "var(--amber)" }}>{processingProgress}%</span>
+                <span style={{ fontSize: 12, color: "var(--c-text-muted)" }}>Snackle 1.0</span>
+                <span style={{ fontSize: 12, color: "var(--c-accent)" }}>{processingProgress}%</span>
               </div>
               <div style={{ height: 4, background: "rgba(229,229,229,0.1)", borderRadius: 2 }}>
-                <div style={{ height: "100%", width: `${processingProgress}%`, background: "linear-gradient(to right, var(--navy), var(--amber))", transition: "width 1s" }} />
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${processingProgress}%`,
+                    background: "linear-gradient(to right, var(--navy), var(--amber))",
+                    transition: "width 1s",
+                  }}
+                />
               </div>
             </div>
           </div>
         ) : (
-          <>
-            <div ref={scrollRef} className="scroll-container" style={{ flex: 1, overflowY: "auto", padding: "32px 24px" }}>
-              {!started && (
-                <div style={{ textAlign: "center", padding: "40px 20px", maxWidth: 600, margin: "0 auto" }}>
-                  <div style={{ width: 220, height: 220, margin: "0 auto 32px" }}>
-                    <IntelligenceCreature size={220} />
-                  </div>
-                  <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 3vw, 40px)", fontWeight: 700, marginBottom: 16 }}>
-                    Hello. I&apos;m Snackle 1.0.
-                  </h2>
-                  <p style={{ fontSize: 16, color: "var(--light)", opacity: 0.65, lineHeight: 1.7, marginBottom: 40 }}>
-                    The first inventory intelligence model built for Indian D2C brands. Upload your data, pick me from the model selector, and I&apos;ll guide you to decisions your competition can&apos;t see coming.
-                  </p>
-                  <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap" }}>
-                    {[
-                      { n: "1", label: "Drop your CSV", done: !!uploadedFile },
-                      { n: "2", label: "Select Snackle 1.0", done: !!selectedModel },
-                      { n: "3", label: "Answer 12 questions", done: false },
-                    ].map((step) => (
-                      <div
-                        key={step.n}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                          padding: "10px 18px",
-                          border: "1px solid rgba(229,229,229,0.1)",
-                          borderRadius: 12,
-                          background: "rgba(255,255,255,0.02)",
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: "50%",
-                            background: "rgba(252,163,17,0.1)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: step.done ? "#22c55e" : "var(--amber)",
-                          }}
-                        >
-                          {step.n}
-                        </span>
-                        <span style={{ fontSize: 13, color: "var(--light)", opacity: 0.8 }}>{step.label}</span>
-                      </div>
-                    ))}
-                  </div>
+          <div ref={scrollRef} className="scroll-container console-scroll">
+            {!started && (
+              <div className="console-welcome">
+                <div className="console-welcome-creature">
+                  <IntelligenceCreature size={280} />
                 </div>
-              )}
 
-              {answeredQuestions.map((qa, i) => (
-                <div
-                  key={i}
-                  style={{
-                    background: "rgba(0,0,0,0.3)",
-                    border: "1px solid rgba(229,229,229,0.06)",
-                    borderRadius: 14,
-                    padding: "16px 20px",
-                    maxWidth: 680,
-                    margin: "0 auto 12px",
-                    display: "flex",
-                    gap: 16,
-                  }}
-                >
-                  <span style={{ fontSize: 11, color: "var(--amber)", opacity: 0.5, fontWeight: 600, minWidth: 20 }}>{i + 1}.</span>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 12, color: "var(--light)", opacity: 0.4, marginBottom: 4 }}>{qa.question.slice(0, 80)}…</p>
-                    <p style={{ fontSize: 14, color: "var(--white)", fontWeight: 500 }}>{qa.answer}</p>
-                  </div>
-                  <span style={{ color: "var(--amber)", fontSize: 12, opacity: 0.5 }}>✓</span>
+                <h2 className="console-welcome-title">Hello. I&apos;m Snackle 1.0.</h2>
+
+                <p className="console-welcome-desc">
+                  The first inventory intelligence model for Indian D2C brands. Upload your data and I&apos;ll guide you to decisions your competition can&apos;t see coming.
+                </p>
+
+                <StepIndicators uploadedFile={uploadedFile} selectedModel={selectedModel} />
+
+                <p className="console-welcome-hint">Model pre-selected · Answer naturally in any Indian language</p>
+              </div>
+            )}
+
+            {answeredQuestions.map((qa, i) => (
+              <div key={i} className="console-qa-card">
+                <span style={{ fontSize: 11, color: "var(--c-accent)", opacity: 0.5, fontWeight: 600, minWidth: 20 }}>{i + 1}.</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 12, color: "var(--c-text-muted)", marginBottom: 4 }}>{qa.question.slice(0, 80)}…</p>
+                  <p style={{ fontSize: 14, color: "var(--c-text)", fontWeight: 500 }}>{qa.answer}</p>
                 </div>
-              ))}
+                <span style={{ color: "var(--c-accent)", fontSize: 12, opacity: 0.5 }}>✓</span>
+              </div>
+            ))}
 
-              {(questionIndex >= 0 || awaitingConfirmation) && (
-                <div
-                  className="question-card"
-                  style={{
-                    background: "rgba(20,33,61,0.5)",
-                    border: "1px solid rgba(252,163,17,0.2)",
-                    borderRadius: 20,
-                    padding: "28px 32px",
-                    maxWidth: 680,
-                    margin: "24px auto 0",
-                    backdropFilter: "blur(12px)",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                    <div
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "50%",
-                        background: "rgba(252,163,17,0.15)",
-                        border: "1.5px solid rgba(252,163,17,0.4)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: "var(--amber)",
-                        fontFamily: "var(--font-display)",
-                      }}
-                    >
-                      {awaitingConfirmation ? "✓" : questionIndex + 1}
-                    </div>
-                    <span style={{ fontSize: 11, color: "var(--amber)", opacity: 0.6, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                      {awaitingConfirmation ? "Ready to analyze" : `Question ${questionIndex + 1} of 12`}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowLangPicker(true)}
-                      style={{
-                        marginLeft: "auto",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        padding: "5px 12px",
-                        border: "1px solid rgba(229,229,229,0.15)",
-                        borderRadius: 999,
-                        background: "transparent",
-                        color: "var(--light)",
-                        fontSize: 12,
-                        cursor: "pointer",
-                      }}
-                    >
-                      🌐 {langLabel}
-                    </button>
-                  </div>
-                  <p className="question-text" style={{ fontSize: 18, color: "var(--white)", lineHeight: 1.65, marginBottom: 24, minHeight: 60 }}>
-                    {currentQuestionText}
-                  </p>
-                  <div
+            {(questionIndex >= 0 || awaitingConfirmation) && (
+              <div className="question-card">
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                  <div className="console-q-num">{awaitingConfirmation ? "✓" : questionIndex + 1}</div>
+                  <span style={{ fontSize: 11, color: "var(--c-accent)", opacity: 0.6, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                    {awaitingConfirmation ? "Ready to analyze" : `Question ${questionIndex + 1} of 12`}
+                  </span>
+                  <button type="button" onClick={() => setShowLangPicker(true)} className="console-lang-btn">
+                    🌐 {langLabel}
+                  </button>
+                </div>
+                <p className="question-text" style={{ fontSize: 18, color: "var(--c-text)", lineHeight: 1.65, marginBottom: 24, minHeight: 60 }}>
+                  {currentQuestionText}
+                </p>
+                <div className="console-input-wrap" style={{ border: `1px solid ${isFocused ? "rgba(252,163,17,0.4)" : "rgba(229,229,229,0.1)"}` }}>
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={selectedModel ? "Type your answer here..." : "Select Snackle 1.0 first..."}
+                    rows={1}
+                    className="console-textarea"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={!selectedModel || !inputValue.trim()}
+                    className="console-send-btn"
                     style={{
-                      display: "flex",
-                      gap: 12,
-                      alignItems: "flex-end",
-                      background: "rgba(0,0,0,0.3)",
-                      border: `1px solid ${isFocused ? "rgba(252,163,17,0.4)" : "rgba(229,229,229,0.1)"}`,
-                      borderRadius: 14,
-                      padding: "14px 16px",
+                      background: !selectedModel || !inputValue.trim() ? "rgba(229,229,229,0.06)" : "var(--c-accent)",
+                      cursor: !selectedModel || !inputValue.trim() ? "not-allowed" : "pointer",
+                      color: !selectedModel || !inputValue.trim() ? "rgba(229,229,229,0.2)" : "#080808",
                     }}
                   >
-                    <textarea
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onFocus={() => setIsFocused(true)}
-                      onBlur={() => setIsFocused(false)}
-                      onKeyDown={handleKeyDown}
-                      placeholder={selectedModel ? "Type your answer here..." : "Select Snackle 1.0 first..."}
-                      rows={1}
-                      style={{
-                        flex: 1,
-                        background: "transparent",
-                        border: "none",
-                        outline: "none",
-                        color: "var(--white)",
-                        fontSize: 16,
-                        resize: "none",
-                        fontFamily: "var(--font-body)",
-                        caretColor: "var(--amber)",
-                        minHeight: 40,
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSend}
-                      disabled={!selectedModel || !inputValue.trim()}
-                      style={{
-                        width: 44,
-                        height: 44,
-                        minWidth: 44,
-                        borderRadius: "50%",
-                        background: !selectedModel || !inputValue.trim() ? "rgba(229,229,229,0.06)" : "var(--amber)",
-                        border: "none",
-                        cursor: !selectedModel || !inputValue.trim() ? "not-allowed" : "pointer",
-                        fontSize: 18,
-                        color: !selectedModel || !inputValue.trim() ? "rgba(229,229,229,0.2)" : "var(--black)",
-                      }}
-                    >
-                      ↑
-                    </button>
-                  </div>
+                    ↑
+                  </button>
                 </div>
-              )}
-            </div>
-          </>
+              </div>
+            )}
+          </div>
         )}
       </main>
 
       {showLangPicker && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.8)",
-            zIndex: 200,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-          }}
-          onClick={() => setShowLangPicker(false)}
-        >
-          <div
-            style={{
-              background: "rgba(20,33,61,0.98)",
-              border: "1px solid rgba(252,163,17,0.3)",
-              borderRadius: 20,
-              padding: 32,
-              maxWidth: 480,
-              width: "90%",
-              backdropFilter: "blur(20px)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="console-lang-overlay" onClick={() => setShowLangPicker(false)}>
+          <div className="console-lang-modal" onClick={(e) => e.stopPropagation()}>
             <h3 style={{ fontFamily: "var(--font-display)", fontSize: 20, marginBottom: 8 }}>Choose your language</h3>
-            <p style={{ fontSize: 13, color: "var(--light)", opacity: 0.6, marginBottom: 24 }}>
+            <p style={{ fontSize: 13, color: "var(--c-text-dim)", marginBottom: 24 }}>
               All questions will switch. Answer in your language — Snackle understands.
             </p>
             <div className="lang-picker-grid">
@@ -702,24 +604,18 @@ export default function SnackleConsole() {
                     setSelectedLanguage(lang.code);
                     setShowLangPicker(false);
                   }}
+                  className="console-lang-option"
                   style={{
-                    padding: "12px 16px",
                     border: `1px solid ${selectedLanguage === lang.code ? "rgba(252,163,17,0.6)" : "rgba(229,229,229,0.12)"}`,
-                    borderRadius: 10,
                     background: selectedLanguage === lang.code ? "rgba(252,163,17,0.1)" : "transparent",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    textAlign: "left",
                   }}
                 >
                   <span style={{ fontSize: 20 }}>{lang.flag}</span>
                   <div>
-                    <div style={{ fontSize: 14, color: "var(--white)", fontWeight: 600 }}>{lang.native}</div>
-                    <div style={{ fontSize: 11, color: "var(--light)", opacity: 0.5 }}>{lang.name}</div>
+                    <div style={{ fontSize: 14, color: "var(--c-text)", fontWeight: 600 }}>{lang.native}</div>
+                    <div style={{ fontSize: 11, color: "var(--c-text-muted)" }}>{lang.name}</div>
                   </div>
-                  {selectedLanguage === lang.code && <span style={{ marginLeft: "auto", color: "var(--amber)" }}>✓</span>}
+                  {selectedLanguage === lang.code && <span style={{ marginLeft: "auto", color: "var(--c-accent)" }}>✓</span>}
                 </button>
               ))}
             </div>

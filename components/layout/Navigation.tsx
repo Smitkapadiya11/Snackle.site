@@ -34,8 +34,6 @@ export function Navigation() {
     };
   }, [menuOpen]);
 
-  const isHome = pathname === "/";
-
   return (
     <>
       <nav
@@ -60,7 +58,7 @@ export function Navigation() {
           maxWidth: 960,
           transition: "background 0.3s ease, box-shadow 0.3s ease",
           boxShadow: scrolled ? "0 8px 32px rgba(0,0,0,0.4)" : "none",
-          opacity: isHome ? 0 : 1,
+          opacity: 1,
         }}
       >
         <Logo size="sm" />

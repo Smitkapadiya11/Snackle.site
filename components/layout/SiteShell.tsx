@@ -1,8 +1,16 @@
 "use client";
 
+import { useEffect } from "react";
 import { Navigation } from "@/components/layout/Navigation";
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      document.documentElement.classList.add("js-ready");
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div
       style={{

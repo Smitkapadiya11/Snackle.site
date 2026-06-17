@@ -7,15 +7,15 @@ import { IntelligenceCreature } from "@/components/art/IntelligenceCreature";
 import { useSiteAnimations } from "@/lib/animation/useSiteAnimations";
 
 const ALGORITHMS = [
-  { name: "Monte Carlo", icon: "◎", desc: "10,000 demand paths per product", tag: "Stockout Risk" },
-  { name: "Holt-Winters", icon: "⟿", desc: "Trend + seasonality ensemble forecast", tag: "Demand Forecast" },
-  { name: "Statistical SS", icon: "σ", desc: "Lead time variability accounted", tag: "Safety Stock" },
-  { name: "EOQ Model", icon: "∮", desc: "Mathematically optimal order qty", tag: "Reorder" },
-  { name: "ABC-XYZ", icon: "⊞", desc: "9-cell classification, 9 strategies", tag: "Classification" },
-  { name: "Isolation Forest", icon: "⊕", desc: "ML anomaly detection on sales", tag: "Anomaly" },
-  { name: "CUSUM", icon: "Δ", desc: "Detects when demand sustainably shifts", tag: "Change Point" },
-  { name: "Price Elasticity", icon: "ε", desc: "Optimal markdown price calculator", tag: "Dead Stock" },
-  { name: "GMROI", icon: "$", desc: "Is your inventory working hard enough?", tag: "Profitability" },
+  { name: "Monte Carlo", path: "M4 12 Q8 4 12 12 Q16 20 20 12", desc: "10,000 demand paths per product", tag: "Stockout Risk" },
+  { name: "Holt-Winters", path: "M2 16 L6 8 L10 14 L14 6 L18 12 L22 4", desc: "Trend + seasonality ensemble forecast", tag: "Demand Forecast" },
+  { name: "Statistical SS", path: "M12 2 L12 22 M2 12 H22", desc: "Lead time variability accounted", tag: "Safety Stock" },
+  { name: "EOQ Model", path: "M12 2 C6 2 2 6 2 12 C2 18 6 22 12 22", desc: "Mathematically optimal order qty", tag: "Reorder" },
+  { name: "ABC-XYZ", path: "M3 3 H9 V9 H3 Z M3 15 H9 V21 H3 Z M15 3 H21 V9 H15 Z M15 15 H21 V21 H15 Z", desc: "9-cell classification, 9 strategies", tag: "Classification" },
+  { name: "Isolation Forest", path: "M12 2 L12 8 M12 16 L12 22 M2 12 H8 M16 12 H22", desc: "ML anomaly detection on sales", tag: "Anomaly" },
+  { name: "CUSUM", path: "M2 12 L6 12 L8 4 L12 20 L14 8 L16 12 L22 12", desc: "Detects when demand sustainably shifts", tag: "Change Point" },
+  { name: "Price Elasticity", path: "M2 20 L22 4 M8 20 L22 20 M2 4 L2 20", desc: "Optimal markdown price calculator", tag: "Dead Stock" },
+  { name: "GMROI", path: "M12 2 L15 9 L22 9 L17 14 L19 21 L12 17 L5 21 L7 14 L2 9 L9 9 Z", desc: "Is your inventory working hard enough?", tag: "Profitability" },
 ];
 
 const STEPS = [
@@ -145,7 +145,6 @@ export default function HomePage() {
               borderRadius: 999,
               padding: "6px 16px",
               marginBottom: 24,
-              opacity: 0,
             }}
           >
             <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--c-accent)", display: "inline-block" }} />
@@ -155,19 +154,19 @@ export default function HomePage() {
           </div>
 
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(52px, 5.5vw, 88px)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.035em", marginBottom: 28 }}>
-            <span className="hero-title-line-1 hero-anim" style={{ color: "var(--c-text)", display: "block", opacity: 0 }}>
+            <span className="hero-title-line-1 hero-anim" style={{ color: "var(--c-text)", display: "block" }}>
               Your Inventory.
             </span>
-            <span className="hero-title-line-2 hero-anim" style={{ color: "var(--c-accent)", display: "block", opacity: 0 }}>
+            <span className="hero-title-line-2 hero-anim" style={{ color: "var(--c-accent)", display: "block" }}>
               Predicted.
             </span>
           </h1>
 
-          <p className="hero-subtitle hero-anim" style={{ fontSize: 18, color: "var(--c-text-dim)", lineHeight: 1.7, maxWidth: 480, opacity: 0, marginBottom: 0 }}>
+          <p className="hero-subtitle hero-anim" style={{ fontSize: 18, color: "var(--c-text-dim)", lineHeight: 1.7, maxWidth: 480, marginBottom: 0 }}>
             Upload your data. Answer 12 questions. Snackle&apos;s intelligence engine tells you exactly what to stock, what to clear, and where opportunity hides — before your competitors see it.
           </p>
 
-          <div className="hero-cta-wrap hero-anim btn-row" style={{ display: "flex", gap: 16, marginTop: 40, flexWrap: "wrap", opacity: 0 }}>
+          <div className="hero-cta-wrap hero-anim btn-row" style={{ display: "flex", gap: 16, marginTop: 40, flexWrap: "wrap" }}>
             <Link href="/use" className="btn-primary">
               Start Forecasting Free →
             </Link>
@@ -183,7 +182,7 @@ export default function HomePage() {
               { id: "stat-abc", init: "0x", label: "ABC-XYZ Matrix Cells" },
               { id: "stat-time", init: "0min", label: "Full Analysis Time" },
             ].map((s) => (
-              <div key={s.id} className="hero-stat hero-anim" style={{ textAlign: "center", opacity: 0 }}>
+              <div key={s.id} className="hero-stat hero-anim" style={{ textAlign: "center" }}>
                 <div
                   id={s.id}
                   style={{
@@ -292,7 +291,15 @@ export default function HomePage() {
           <div className="algo-grid">
             {ALGORITHMS.map((algo) => (
               <div key={algo.name} className="glass anim-child" style={{ padding: "28px 24px" }}>
-                <div style={{ fontSize: 28, color: "var(--c-accent)", marginBottom: 12 }}>{algo.icon}</div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 12 }} aria-hidden>
+                  <path
+                    d={algo.path}
+                    stroke="#FCA311"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--c-text-muted)", marginBottom: 8 }}>
                   {algo.tag}
                 </div>
