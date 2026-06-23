@@ -147,14 +147,16 @@ export default function ForecastOverview({ result, currency }: ForecastOverviewP
     v2Products.forEach((p) => {
       let units = 0;
       if (horizon === "30d") {
-        units = p.forecast.next_30d;
+        units = (p.forecast.next_30d || p.forecast.daily_avg * 30) || 0;
       } else if (horizon === "90d") {
-        units = p.forecast.next_90d;
+        units = (p.forecast.next_90d || p.forecast.daily_avg * 90) || 0;
       } else {
-        units = p.seasonal?.yearly_forecast?.total_365d || (p.forecast.daily_avg * 365);
+        units = (p.seasonal?.yearly_forecast?.total_365d || (p.forecast.daily_avg * 365)) || 0;
       }
-      totalUnits += units;
-      totalRevenue += units * p.price;
+      if (isFinite(units) && !isNaN(units)) {
+        totalUnits += units;
+        totalRevenue += units * (p.price || 0);
+      }
     });
 
     // Find peak period in the aggregated chart data
@@ -180,15 +182,16 @@ export default function ForecastOverview({ result, currency }: ForecastOverviewP
     return [...v2Products]
       .map((p) => {
         let units = 0;
-        if (horizon === "30d") units = p.forecast.next_30d;
-        else if (horizon === "90d") units = p.forecast.next_90d;
-        else units = p.seasonal?.yearly_forecast?.total_365d || (p.forecast.daily_avg * 365);
+        if (horizon === "30d") units = (p.forecast.next_30d || p.forecast.daily_avg * 30) || 0;
+        else if (horizon === "90d") units = (p.forecast.next_90d || p.forecast.daily_avg * 90) || 0;
+        else units = (p.seasonal?.yearly_forecast?.total_365d || (p.forecast.daily_avg * 365)) || 0;
+        units = isFinite(units) && !isNaN(units) ? units : 0;
 
         return {
           name: p.name,
           sku: p.sku,
           units: Math.round(units),
-          revenue: Math.round(units * p.price),
+          revenue: Math.round(units * (p.price || 0)),
         };
       })
       .sort((a, b) => b.units - a.units)

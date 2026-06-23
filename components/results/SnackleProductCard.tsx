@@ -90,14 +90,17 @@ export default function SnackleProductCard({
   const v2 = card.engine_v2 as PythonProductAnalysis | undefined;
   const algo = card.algorithm_output;
 
-  const daysOfStock = Math.round(v2 ? Number(v2.key_metrics.days_of_stock || 0) : algo.days_of_stock);
-  const revenueAtRisk = v2 ? v2.monte_carlo.expected_revenue_at_risk : algo.revenue_at_risk;
-  const capitalLocked = v2 ? v2.dead_stock.capital_locked : algo.capital_locked;
-  const forecast30d = Math.round(v2 ? v2.forecast.next_30d : algo.forecast_next_30d || 0);
-  const trendPct = v2 ? v2.forecast.trend_pct : 0;
-  const abcCell = v2?.abc_xyz?.abc_xyz_cell || v2?.abc_xyz?.abc_class || "B";
-  const gmroi = v2 ? v2.profitability.gmroi : 0;
-  const currentStock = v2 ? v2.current_stock : 0;
+  const rawDays = v2 ? Number(v2.key_metrics?.days_of_stock ?? algo.days_of_stock) : algo.days_of_stock;
+  const daysOfStock = isNaN(rawDays) ? 0 : Math.round(rawDays);
+  const stockMissing = daysOfStock < 0;
+  const revenueAtRisk = v2 ? (v2.monte_carlo?.expected_revenue_at_risk ?? algo.revenue_at_risk) : algo.revenue_at_risk;
+  const capitalLocked = v2 ? (v2.dead_stock?.capital_locked ?? algo.capital_locked) : algo.capital_locked;
+  const rawFc30 = v2 ? (v2.forecast?.next_30d ?? v2.forecast?.daily_avg * 30) : (algo.forecast_next_30d || 0);
+  const forecast30d = isFinite(rawFc30) && !isNaN(rawFc30) ? Math.round(rawFc30) : 0;
+  const trendPct = v2 ? (v2.forecast?.trend_pct ?? 0) : (algo.product?.sales_trend_pct ?? 0);
+  const abcCell = v2?.abc_xyz?.abc_xyz_cell || v2?.abc_xyz?.abc_class || (algo as { abc_class?: string })?.abc_class || "C";
+  const gmroi = v2 ? (v2.profitability?.gmroi ?? 0) : 0;
+  const currentStock = v2 ? (v2.current_stock ?? 0) : (algo.product?.current_stock ?? 0);
   const history = algo.product.sales_history;
 
   const fmt = (n: number) => {
@@ -192,12 +195,12 @@ export default function SnackleProductCard({
         {/* Metrics grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12, marginTop: 8 }}>
           {[
-            { label: "Days left", value: `${daysOfStock}d`, urgent: daysOfStock < 14 },
+            { label: "Days left", value: stockMissing ? "N/A" : `${daysOfStock}d`, urgent: !stockMissing && daysOfStock < 14 },
             { label: "Forecast 30d", value: `${forecast30d}u` },
-            { label: "Trend", value: `${trendPct > 0 ? "+" : ""}${trendPct.toFixed(1)}%`, up: trendPct > 0 },
-            { label: "Revenue risk", value: fmt(revenueAtRisk) },
-            { label: "Capital locked", value: fmt(capitalLocked) },
-            { label: "GMROI", value: `${gmroi.toFixed(1)}×` },
+            { label: "Trend", value: `${trendPct > 0 ? "+" : ""}${(trendPct || 0).toFixed(1)}%`, up: trendPct > 0 },
+            { label: "Revenue risk", value: fmt(revenueAtRisk || 0) },
+            { label: "Capital locked", value: fmt(capitalLocked || 0) },
+            { label: "GMROI", value: `${(gmroi || 0).toFixed(1)}×` },
           ].map((metric) => (
             <div key={metric.label} style={{
               background: "rgba(255,255,255,0.04)",

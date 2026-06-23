@@ -100,6 +100,13 @@ export function runFullAnalysis(products: ProductData[], brand: BrandContext): A
       priority_score = 10;
     }
 
+    // If stock data is entirely missing, downgrade CRITICAL to MONITOR so we
+    // don't spam false alerts for every product in a stock-column-free CSV.
+    if ((stockout as { stock_data_missing?: boolean }).stock_data_missing && status === "CRITICAL") {
+      status = "MONITOR";
+      priority_score = Math.min(priority_score, 50);
+    }
+
     return {
       product,
       status,

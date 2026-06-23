@@ -12,24 +12,74 @@ export const EXPECTED_FIELDS = [
 ] as const;
 
 const AUTO_MAP: Record<string, string[]> = {
-  date: ["date", "sale_date", "order_date", "transaction_date"],
-  product_name: ["product_name", "product", "name", "item_name", "title"],
-  sku: ["sku", "product_sku", "item_sku", "code"],
-  units_sold: ["units_sold", "quantity", "qty", "units", "sales"],
-  price: ["price", "unit_price", "selling_price", "mrp"],
-  current_stock: ["stock_on_hand", "current_stock", "stock", "inventory", "qty_on_hand"],
+  date: [
+    "date", "sale_date", "order_date", "transaction_date", "invoice_date",
+    "bill_date", "dispatch_date", "created_date", "date_of_sale", "orderdate",
+    "saledate", "dt", "salesdate", "doc_date", "booking_date",
+  ],
+  product_name: [
+    "product_name", "product", "name", "item_name", "title", "item",
+    "product_desc", "description", "item_description", "productname",
+    "prod_name", "goods_name", "article_name", "article", "item_desc",
+    "particular", "particulars", "narration",
+  ],
+  sku: [
+    "sku", "product_sku", "item_sku", "code", "product_code", "item_code",
+    "asin", "fnsku", "barcode", "ean", "isbn", "model_no", "model",
+    "sku_code", "product_id", "item_id", "prod_code",
+  ],
+  units_sold: [
+    "units_sold", "quantity", "qty", "units", "sales", "sold",
+    "qty_sold", "quantity_sold", "sale_qty", "sales_qty",
+    "units_ordered", "order_qty", "qty_ordered", "invoiced_qty",
+    "billed_qty", "dispatched_qty", "shipped_qty", "pieces",
+    "pcs", "nos", "number_of_units", "no_of_units",
+  ],
+  price: [
+    "price", "unit_price", "selling_price", "mrp", "rate", "sp",
+    "sale_price", "retail_price", "list_price", "basic_price",
+    "net_price", "gross_price", "invoice_price", "billing_price",
+    "amount_per_unit", "per_unit_price", "item_price", "cost_price",
+    "landed_cost", "dp", "dealer_price",
+  ],
+  current_stock: [
+    "stock_on_hand", "current_stock", "stock", "inventory",
+    "qty_on_hand", "closing_stock", "balance_qty", "balance",
+    "available_qty", "available_stock", "in_hand", "on_hand",
+    "inventory_qty", "stock_qty", "remaining_stock", "unsold_qty",
+    "opening_stock", "stock_balance",
+  ],
 };
 
 export function autoDetectColumns(headers: string[]): Record<string, string> {
   const map: Record<string, string> = {};
+  // Normalize: lowercase + strip spaces/underscores/hyphens for fuzzy matching
+  const normalize = (s: string) => s.toLowerCase().replace(/[\s_\-\.]+/g, "");
   const lowerHeaders = headers.map((h) => h.toLowerCase().trim());
+  const normalHeaders = headers.map((h) => normalize(h));
 
   for (const field of EXPECTED_FIELDS) {
+    if (map[field.key]) continue; // already matched
     const candidates = AUTO_MAP[field.key] || [field.key];
-    const match = lowerHeaders.find((h) => candidates.includes(h));
-    if (match) {
-      const original = headers[lowerHeaders.indexOf(match)];
-      map[field.key] = original;
+
+    // Pass 1: exact lowercase match
+    let matchIdx = lowerHeaders.findIndex((h) => candidates.includes(h));
+
+    // Pass 2: normalized match (strip spaces/underscores)
+    if (matchIdx === -1) {
+      const normalCandidates = candidates.map(normalize);
+      matchIdx = normalHeaders.findIndex((h) => normalCandidates.includes(h));
+    }
+
+    // Pass 3: substring match (e.g. "Selling Price" contains "price")
+    if (matchIdx === -1) {
+      matchIdx = lowerHeaders.findIndex((h) =>
+        candidates.some((c) => h.includes(c) || c.includes(h))
+      );
+    }
+
+    if (matchIdx !== -1) {
+      map[field.key] = headers[matchIdx];
     }
   }
   return map;

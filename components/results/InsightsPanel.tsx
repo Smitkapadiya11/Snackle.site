@@ -32,11 +32,13 @@ function generateInsights(result: AnalysisResult, currency: string): Insight[] {
   if (criticalProducts.length > 0) {
     const top = criticalProducts[0];
     const v2 = top.engine_v2 as PythonProductAnalysis | undefined;
-    const daysLeft = v2 ? Math.round(Number(v2.key_metrics.days_of_stock || 30)) : Math.round(top.algorithm_output.days_of_stock);
-    const riskAmt = v2 ? v2.monte_carlo.expected_revenue_at_risk : top.algorithm_output.revenue_at_risk;
+    const daysLeft = v2 ? Math.round(Number(v2.key_metrics?.days_of_stock || top.algorithm_output.days_of_stock)) : Math.round(top.algorithm_output.days_of_stock);
+    const riskAmt = v2 ? (v2.monte_carlo?.expected_revenue_at_risk ?? top.algorithm_output.revenue_at_risk) : top.algorithm_output.revenue_at_risk;
+    const reorderQty = v2?.reorder?.recommended_order_qty ?? top.algorithm_output.reorder_qty;
+    const eoqUnits = v2?.reorder?.eoq_units ?? top.algorithm_output.eoq;
     insights.push({
       question: "⚡ What needs action TODAY?",
-      answer: `${criticalProducts.length} products are in CRITICAL state. "${top.product_name}" has only ${daysLeft} days of stock left — stockout in ${daysLeft} days risks ${fmt(riskAmt, currency)} in lost revenue. ${v2 ? `Order ${Math.round(v2.reorder.recommended_order_qty)} units (EOQ: ${Math.round(v2.reorder.eoq_units)}) immediately.` : `Reorder ${Math.round(top.algorithm_output.reorder_qty)} units now.`}`,
+      answer: `${criticalProducts.length} products are in CRITICAL state. "${top.product_name}" has only ${daysLeft} days of stock left — stockout in ${daysLeft} days risks ${fmt(riskAmt, currency)} in lost revenue. Order ${Math.round(reorderQty)} units (EOQ: ${Math.round(eoqUnits)}) immediately.`,
       priority: "critical",
       icon: "🚨",
     });
@@ -55,11 +57,12 @@ function generateInsights(result: AnalysisResult, currency: string): Insight[] {
   if (deadStockProducts.length > 0 && totalLocked > 0) {
     const top = deadStockProducts[0];
     const v2 = top.engine_v2 as PythonProductAnalysis | undefined;
-    const discountPct = v2 ? v2.dead_stock.optimal_discount_pct : top.algorithm_output.recommended_discount_pct;
-    const recoverable = v2 ? v2.dead_stock.capital_recovered_at_optimal : top.algorithm_output.capital_freed;
+    const discountPct = v2?.dead_stock?.optimal_discount_pct ?? top.algorithm_output.recommended_discount_pct;
+    const recoverable = v2?.dead_stock?.capital_recovered_at_optimal ?? top.algorithm_output.capital_freed;
+    const bundleUplift = v2?.dead_stock?.bundle_revenue_uplift_pct ?? 0;
     insights.push({
       question: "💸 Where is capital stuck?",
-      answer: `${fmt(totalLocked, currency)} is locked across ${deadStockProducts.length} dead stock products. "${top.product_name}" is the worst offender — a ${Math.round(discountPct)}% markdown could recover ${fmt(recoverable, currency)} within 2 weeks. ${v2?.dead_stock.bundle_revenue_uplift_pct && v2.dead_stock.bundle_revenue_uplift_pct > 10 ? `Bundling with your top seller could add +${Math.round(v2.dead_stock.bundle_revenue_uplift_pct)}% revenue uplift.` : ""}`,
+      answer: `${fmt(totalLocked, currency)} is locked across ${deadStockProducts.length} dead stock products. "${top.product_name}" is the worst offender — a ${Math.round(discountPct)}% markdown could recover ${fmt(recoverable, currency)} within 2 weeks. ${bundleUplift > 10 ? `Bundling with your top seller could add +${Math.round(bundleUplift)}% revenue uplift.` : ""}`,
       priority: "warning",
       icon: "🔒",
     });
@@ -71,9 +74,9 @@ function generateInsights(result: AnalysisResult, currency: string): Insight[] {
   if (opportunityProducts.length > 0) {
     const top = opportunityProducts[0];
     const v2 = top.engine_v2 as PythonProductAnalysis | undefined;
-    const urgency = v2?.opportunity.urgency_level || "THIS_WEEK";
-    const adSpend = v2 ? v2.opportunity.recommended_ad_spend : top.algorithm_output.recommended_ad_spend;
-    const roas = v2 ? v2.opportunity.expected_roas : 3;
+    const urgency = v2?.opportunity?.urgency_level || "THIS_WEEK";
+    const adSpend = v2?.opportunity?.recommended_ad_spend ?? top.algorithm_output.recommended_ad_spend;
+    const roas = v2?.opportunity?.expected_roas ?? 3;
     insights.push({
       question: "📈 What growth opportunities exist?",
       answer: `${fmt(totalOpportunity, currency)} in opportunity revenue over 30 days across ${opportunityProducts.length} products. "${top.product_name}" shows ${urgency === "IMMEDIATE" ? "IMMEDIATE" : "strong"} demand growth — investing ${fmt(adSpend, currency)} in ads could yield ${roas}× ROAS. Act now before competitors fill the gap.`,
@@ -85,18 +88,18 @@ function generateInsights(result: AnalysisResult, currency: string): Insight[] {
   // Q4: How accurate are the forecasts?
   const avgMape = ps?.avg_forecast_mape || 0.2;
   const accuracy = Math.round((1 - avgMape) * 100);
-  const bestProduct = cards.reduce((best, c) => {
+  const bestProduct = cards.length > 0 ? cards.reduce((best, c) => {
     const v2 = c.engine_v2 as PythonProductAnalysis | undefined;
-    const mape = v2?.forecast.model_accuracy_mape || 0.5;
-    const bestV2 = best.engine_v2 as PythonProductAnalysis | undefined;
-    const bestMape = bestV2?.forecast.model_accuracy_mape || 0.5;
+    const mape = v2?.forecast?.model_accuracy_mape || 0.5;
+    const bestV2 = best?.engine_v2 as PythonProductAnalysis | undefined;
+    const bestMape = bestV2?.forecast?.model_accuracy_mape || 0.5;
     return mape < bestMape ? c : best;
-  }, cards[0]);
+  }, cards[0]) : null;
   const bestV2 = bestProduct?.engine_v2 as PythonProductAnalysis | undefined;
 
   insights.push({
     question: "🎯 How reliable are these predictions?",
-    answer: `Overall forecast accuracy: ${accuracy}% across ${result.total_products} products (${Math.round(avgMape * 100)}% MAPE). ${bestProduct ? `"${bestProduct.product_name}" has the best forecast model (${bestV2?.forecast.forecast_model_used || "ensemble"}, ${Math.round((bestV2?.forecast.model_accuracy_mape || 0.2) * 100)}% MAPE).` : ""} The Monte Carlo simulation ran ${(10000).toLocaleString("en-IN")} paths per product for stockout probability.`,
+    answer: `Overall forecast accuracy: ${accuracy}% across ${result.total_products} products (${Math.round(avgMape * 100)}% MAPE). ${bestProduct ? `"${bestProduct.product_name}" has the best forecast model (${bestV2?.forecast?.forecast_model_used || "exponential smoothing"}, ${Math.round((bestV2?.forecast?.model_accuracy_mape || 0.2) * 100)}% MAPE).` : ""} The Monte Carlo simulation ran ${(10000).toLocaleString("en-IN")} paths per product for stockout probability.`,
     priority: "info",
     icon: "📊",
   });
@@ -116,7 +119,7 @@ function generateInsights(result: AnalysisResult, currency: string): Insight[] {
   // Q6: Which products are driving most value?
   const abcProducts = cards.filter(c => {
     const v2 = c.engine_v2 as PythonProductAnalysis | undefined;
-    return v2?.abc_xyz?.abc_class === "A";
+    return (v2?.abc_xyz?.abc_class ?? (c.algorithm_output as { abc_class?: string })?.abc_class) === "A";
   });
 
   if (abcProducts.length > 0) {
@@ -132,16 +135,16 @@ function generateInsights(result: AnalysisResult, currency: string): Insight[] {
   // Q7: Seasonal preparation
   const seasonalProduct = cards.find(c => {
     const v2 = c.engine_v2 as PythonProductAnalysis | undefined;
-    return v2?.seasonal?.seasonal_patterns?.has_seasonality;
+    return v2?.seasonal?.seasonal_patterns?.has_seasonality === true;
   });
 
   if (seasonalProduct) {
     const v2 = seasonalProduct.engine_v2 as PythonProductAnalysis | undefined;
     const patterns = v2?.seasonal?.seasonal_patterns;
-    const peakMonths = patterns?.peak_months?.slice(0, 2).map(m => 
+    const peakMonths = patterns?.peak_months?.slice(0, 2).map((m: number) => 
       ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][m-1]
     ).join(" and ") || "festive season";
-    const upcomingEvents = v2?.seasonal?.upcoming_events?.slice(0, 2).map(e => e.name).join(" and ") || "";
+    const upcomingEvents = (v2?.seasonal?.upcoming_events as { name: string }[] | undefined)?.slice(0, 2).map(e => e.name).join(" and ") || "";
     insights.push({
       question: "🎄 Am I prepared for seasonal demand spikes?",
       answer: `Your category shows ${Math.round((patterns?.seasonality_strength || 0) * 100)}% seasonality strength. Demand peaks in ${peakMonths}. ${upcomingEvents ? `Upcoming events: ${upcomingEvents} could boost demand significantly.` : ""} Start building safety stock 6-8 weeks before peak season to avoid critical stockouts during your highest-revenue period.`,
@@ -161,7 +164,12 @@ const PRIORITY_STYLES = {
 };
 
 export default function InsightsPanel({ result, currency }: InsightsPanelProps) {
-  const insights = generateInsights(result, currency);
+  let insights: Insight[] = [];
+  try {
+    insights = generateInsights(result, currency);
+  } catch (err) {
+    console.error("InsightsPanel error:", err);
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
