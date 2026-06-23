@@ -105,6 +105,41 @@ export interface ProductCard {
   engine_v2?: import("./python-types").PythonProductAnalysis;
 }
 
+// Portfolio-level summary from the engine
+export interface PortfolioSummary {
+  total_revenue_at_risk: number;
+  total_capital_locked: number;
+  total_opportunity_value_30d: number;
+  total_opportunity_value_90d?: number;
+  critical_count: number;
+  dead_stock_count: number;
+  opportunity_count: number;
+  healthy_count: number;
+  monitor_count: number;
+  avg_forecast_mape: number;
+  // ABC breakdown
+  a_class_count?: number;
+  b_class_count?: number;
+  c_class_count?: number;
+  a_class_revenue_pct?: number;
+  b_class_revenue_pct?: number;
+  c_class_revenue_pct?: number;
+  // Financials
+  total_stock_value?: number;
+  total_annual_revenue_estimate?: number;
+  total_annual_holding_cost?: number;
+  total_reorder_investment_needed?: number;
+  total_capital_recoverable?: number;
+  avg_gmroi?: number;
+  avg_days_of_stock?: number;
+  products_below_reorder_point?: number;
+  products_with_anomalies?: number;
+  products_below_gmroi_target?: number;
+  portfolio_health_score?: number;
+  immediate_reorder_count?: number;
+  total_lost_sales_at_risk_units?: number;
+}
+
 // Full analysis result
 export interface AnalysisResult {
   brand_context: BrandContext;
@@ -118,6 +153,7 @@ export interface AnalysisResult {
   product_cards: ProductCard[];
   generated_at: string;
   engine_version?: string;
-  portfolio_summary?: Record<string, unknown>;
+  portfolio_summary?: PortfolioSummary;
   processing_time_ms?: number;
 }
+

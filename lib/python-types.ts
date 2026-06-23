@@ -1,3 +1,41 @@
+// TypeScript types for Python engine response (updated for v2.0)
+
+export interface SeasonalPattern {
+  monthly_factors: Record<string, number>;
+  peak_months: number[];
+  trough_months: number[];
+  seasonality_strength: number;
+  has_seasonality: boolean;
+  detected_from_data: boolean;
+}
+
+export interface SeasonalContext {
+  seasonal_patterns?: SeasonalPattern;
+  heatmap_data: Array<{
+    month: number;
+    month_name: string;
+    avg_daily: number;
+    total: number;
+    days: number;
+    intensity: number;
+  }>;
+  upcoming_events: Array<{
+    name: string;
+    month: number;
+    uplift_factor: number;
+    months_away: number;
+  }>;
+  yearly_forecast?: {
+    daily: Array<{ date: string; forecast: number; lower: number; upper: number; seasonal_factor: number }>;
+    weekly: Array<{ week: string; forecast: number; lower: number; upper: number }>;
+    monthly: Array<{ month: string; forecast: number; lower: number; upper: number }>;
+    total_365d: number;
+    peak_month: string;
+    trough_month: string;
+  };
+  category: string;
+}
+
 export interface PythonProductAnalysis {
   name: string;
   sku: string;
@@ -95,6 +133,8 @@ export interface PythonProductAnalysis {
   anomalies: {
     has_anomalies: boolean;
     anomaly_dates: string[];
+    anomaly_scores?: number[];
+    anomaly_direction?: string[];
     adjusted_avg_daily_sales: number;
     latest_change_point: string | null;
     change_point_direction: string | null;
@@ -109,7 +149,44 @@ export interface PythonProductAnalysis {
     annual_holding_cost: number;
     net_margin_after_holding: number;
   };
+  seasonal?: SeasonalContext;
   key_metrics: Record<string, number | string | boolean | null>;
+}
+
+export interface PythonPortfolioSummary {
+  total_revenue_at_risk: number;
+  total_capital_locked: number;
+  total_opportunity_value_30d: number;
+  total_opportunity_value_90d?: number;
+  critical_count: number;
+  dead_stock_count: number;
+  opportunity_count: number;
+  healthy_count: number;
+  monitor_count: number;
+  avg_forecast_mape: number;
+  // ABC breakdown
+  a_class_count?: number;
+  b_class_count?: number;
+  c_class_count?: number;
+  a_class_revenue_pct?: number;
+  b_class_revenue_pct?: number;
+  c_class_revenue_pct?: number;
+  // Financials
+  total_stock_value?: number;
+  total_annual_revenue_estimate?: number;
+  total_annual_holding_cost?: number;
+  total_reorder_investment_needed?: number;
+  total_capital_recoverable?: number;
+  avg_gmroi?: number;
+  avg_days_of_stock?: number;
+  products_below_reorder_point?: number;
+  products_with_anomalies?: number;
+  products_below_gmroi_target?: number;
+  portfolio_health_score?: number;
+  immediate_reorder_count?: number;
+  total_lost_sales_at_risk_units?: number;
+  // Legacy
+  a_class_products?: number;
 }
 
 export interface PythonEngineResponse {
@@ -117,7 +194,7 @@ export interface PythonEngineResponse {
   data: {
     brand_context: Record<string, unknown>;
     products: PythonProductAnalysis[];
-    portfolio_summary: Record<string, number>;
+    portfolio_summary: PythonPortfolioSummary;
     generated_at: string;
     engine_version: string;
   };

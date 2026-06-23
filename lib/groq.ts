@@ -35,7 +35,7 @@ async function callGroq(prompt: string, fallbackTags: string[]) {
       const completion = await groq.chat.completions.create({
         model,
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 600,
+        max_tokens: 1500,
         temperature: 0.3,
       });
       raw = completion.choices[0]?.message?.content || "";
@@ -100,14 +100,17 @@ ${km.change_point ? `• 📊 Demand change detected since ${km.change_point}` :
 RISK DRIVERS: ${product.risk_score.risk_factors?.join(", ")}
 
 YOUR TASK:
-Write 2 short, direct paragraphs for the brand owner.
-Use EXACT numbers from above. No bullet points. No hedging.
-Paragraph 1: What is happening RIGHT NOW and the business impact in rupees.
-Paragraph 2: ONE clear action with specific numbers (units, price, date, cost).
+Provide a highly detailed, powerful STRATEGIC INSIGHT report for the brand owner in STRICT MARKDOWN FORMAT. 
+Your report must include:
+1. An Executive Summary (bolded key financial impacts).
+2. A deep dive into the specific data (use bullet points and exact numbers).
+3. A Step-by-Step Action Plan to optimize this product (pricing, ordering, marketing).
 
-Then write action tags:
+Make sure to format it beautifully with headings (###), bold text for emphasis, and bulleted lists.
+
+Then, at the very end on a new line, provide action tags exactly like this:
 TAGS: ["tag1", "tag2", "tag3"]
-Tags: 3-6 words each, use real numbers. Dark pill buttons. Max 4 tags.`;
+Tags: 3-6 words each, use real numbers. Max 4 tags.`;
 
   const fallbackTags = [
     `${product.status}`,

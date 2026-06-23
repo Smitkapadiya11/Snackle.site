@@ -20,6 +20,8 @@ import { normalizeCurrencyInput, normalizeHoldingCost } from "@/lib/snackle-ques
 import { PROCESSING_MESSAGES } from "@/lib/snackle-questions";
 import { useProcessingAnimation } from "@/lib/animation/useAnime";
 import { useSiteAnimations } from "@/lib/animation/useSiteAnimations";
+import { generateSampleFile } from "@/lib/parsers/sample-data";
+
 
 type Product = {
   name: string;
@@ -118,12 +120,16 @@ function FileUploadZone({
   uploadedFile,
   productCount,
   onFileUpload,
+  onSampleLoad,
   inputId,
+  detectedCols,
 }: {
   uploadedFile: File | null;
   productCount: number;
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSampleLoad: () => void;
   inputId: string;
+  detectedCols: Record<string, string> | null;
 }) {
   return (
     <div
@@ -146,6 +152,26 @@ function FileUploadZone({
             Choose File
           </label>
           <input id={inputId} type="file" accept=".csv,.xlsx,.xls" hidden onChange={onFileUpload} />
+          <div style={{ marginTop: 14, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 14 }}>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 8 }}>No data? Try a demo:</p>
+            <button
+              type="button"
+              onClick={onSampleLoad}
+              style={{
+                background: "rgba(252,163,17,0.08)",
+                border: "1px solid rgba(252,163,17,0.3)",
+                borderRadius: 8,
+                color: "#FCA311",
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "6px 14px",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+            >
+              ✨ Load Sample Data (10 products)
+            </button>
+          </div>
         </div>
       ) : (
         <div>
@@ -155,18 +181,52 @@ function FileUploadZone({
               <p style={{ fontSize: 13, color: "var(--c-text)", fontWeight: 600, wordBreak: "break-all" }}>
                 {uploadedFile.name}
               </p>
-              <p style={{ fontSize: 11, color: "var(--c-accent)", marginTop: 2 }}>{productCount} products detected</p>
+              <p style={{ fontSize: 11, color: "var(--c-accent)", marginTop: 2 }}>
+                ✓ {productCount} products detected
+              </p>
             </div>
           </div>
-          <label htmlFor={`${inputId}-change`} style={{ fontSize: 11, color: "var(--c-accent)", cursor: "pointer", marginTop: 10, display: "block" }}>
-            Change File
-          </label>
-          <input id={`${inputId}-change`} type="file" accept=".csv,.xlsx,.xls" hidden onChange={onFileUpload} />
+          {detectedCols && (
+            <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8 }}>
+              <div style={{ fontSize: 9, fontWeight: 600, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+                Column Mapping
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3, fontSize: 11, color: "rgba(255,255,255,0.65)" }}>
+                <div>📅 Date ➔ <span style={{ color: "#FCA311" }}>{detectedCols.date || "Not found"}</span></div>
+                <div>📦 Product ➔ <span style={{ color: "#FCA311" }}>{detectedCols.product_name || "Not found"}</span></div>
+                <div>📈 Sales ➔ <span style={{ color: "#FCA311" }}>{detectedCols.units_sold || "Not found"}</span></div>
+                {detectedCols.price && <div>💰 Price ➔ <span style={{ color: "#FCA311" }}>{detectedCols.price}</span></div>}
+                {detectedCols.stock_on_hand && <div>🎒 Stock ➔ <span style={{ color: "#FCA311" }}>{detectedCols.stock_on_hand}</span></div>}
+              </div>
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            <label htmlFor={`${inputId}-change`} style={{ fontSize: 11, color: "var(--c-accent)", cursor: "pointer", display: "block" }}>
+              Change File
+            </label>
+            <input id={`${inputId}-change`} type="file" accept=".csv,.xlsx,.xls" hidden onChange={onFileUpload} />
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>·</span>
+            <button
+              type="button"
+              onClick={onSampleLoad}
+              style={{
+                background: "none",
+                border: "none",
+                fontSize: 11,
+                color: "rgba(255,255,255,0.4)",
+                cursor: "pointer",
+                padding: 0,
+              }}
+            >
+              Use sample data
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
 
 export default function SnackleConsole() {
   const router = useRouter();
@@ -174,6 +234,7 @@ export default function SnackleConsole() {
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [detectedCols, setDetectedCols] = useState<Record<string, string> | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [answeredQuestions, setAnsweredQuestions] = useState<AnsweredQ[]>([]);
   const [questionIndex, setQuestionIndex] = useState(-1);
@@ -228,6 +289,7 @@ export default function SnackleConsole() {
     const hdrs = Object.keys(rows[0]);
     const detected = autoDetectColumns(hdrs);
     setUploadedFile(file);
+    setDetectedCols(detected);
     if (detected.date && detected.product_name && detected.units_sold) {
       setProducts(groupByProduct(rows as ParsedRow[], detected));
     }
@@ -239,6 +301,11 @@ export default function SnackleConsole() {
     await processFile(file);
     e.target.value = "";
   };
+
+  const handleSampleLoad = useCallback(async () => {
+    const sampleFile = generateSampleFile();
+    await processFile(sampleFile);
+  }, [processFile]);
 
   const startFlow = useCallback(() => {
     if (started || !uploadedFile || products.length === 0 || !selectedModel) return;
@@ -375,7 +442,9 @@ export default function SnackleConsole() {
           uploadedFile={uploadedFile}
           productCount={products.length}
           onFileUpload={handleFileUpload}
+          onSampleLoad={handleSampleLoad}
           inputId="file-input"
+          detectedCols={detectedCols}
         />
 
         {currentQuestion > 0 && (
@@ -477,39 +546,135 @@ export default function SnackleConsole() {
         </div>
 
         {isProcessing ? (
-          <div className="console-processing">
-            <div style={{ position: "relative", width: 200, height: 200, marginBottom: 48 }}>
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="proc-ring"
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    borderRadius: "50%",
-                    border: `${5 - i}px solid rgba(252,163,17,${0.3 / i})`,
-                  }}
-                />
-              ))}
-              <div className="proc-core">⚡</div>
+          <div className="console-processing" style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 40,
+            maxWidth: 840,
+            width: "100%",
+            margin: "0 auto",
+            padding: "40px 20px",
+            flexWrap: "wrap",
+          }}>
+            <style>{`
+              @keyframes pulse {
+                0% { transform: scale(0.85); box-shadow: 0 0 0 0 rgba(252, 163, 17, 0.4); }
+                70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(252, 163, 17, 0); }
+                100% { transform: scale(0.85); box-shadow: 0 0 0 0 rgba(252, 163, 17, 0); }
+              }
+              .pulse-dot {
+                animation: pulse 1.5s infinite;
+              }
+            `}</style>
+
+            {/* Left Column: Spinner & Progress */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1, minWidth: 260 }}>
+              <div style={{ position: "relative", width: 140, height: 140, marginBottom: 28 }}>
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="proc-ring"
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: "50%",
+                      border: `${4 - i}px solid rgba(252,163,17,${0.35 / i})`,
+                    }}
+                  />
+                ))}
+                <div className="proc-core">⚡</div>
+              </div>
+              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700, marginBottom: 8, color: "#fff" }}>Snackle is thinking...</h3>
+              <p style={{ fontSize: 13, color: "var(--c-accent)", marginBottom: 24, textAlign: "center" }}>{procMessage}</p>
+              
+              <div style={{ width: "100%", maxWidth: 300 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, color: "var(--c-text-muted)" }}>Snackle 1.0 Engine</span>
+                  <span style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 600 }}>{processingProgress}%</span>
+                </div>
+                <div style={{ height: 4, background: "rgba(229,229,229,0.08)", borderRadius: 2, overflow: "hidden" }}>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${processingProgress}%`,
+                      background: "linear-gradient(to right, #14213D, #FCA311)",
+                      transition: "width 0.4s ease",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, marginBottom: 12 }}>Snackle is thinking...</h3>
-            <p style={{ fontSize: 14, color: "var(--c-accent)", marginBottom: 40 }}>{procMessage}</p>
-            <div style={{ width: "100%", maxWidth: 400 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                <span style={{ fontSize: 12, color: "var(--c-text-muted)" }}>Snackle 1.0</span>
-                <span style={{ fontSize: 12, color: "var(--c-accent)" }}>{processingProgress}%</span>
-              </div>
-              <div style={{ height: 4, background: "rgba(229,229,229,0.1)", borderRadius: 2 }}>
-                <div
-                  style={{
-                    height: "100%",
-                    width: `${processingProgress}%`,
-                    background: "linear-gradient(to right, var(--navy), var(--amber))",
-                    transition: "width 1s",
-                  }}
-                />
-              </div>
+
+            {/* Right Column: Steps Checklist */}
+            <div className="glass" style={{
+              flex: 1.2,
+              minWidth: 320,
+              padding: "20px 24px",
+              borderRadius: 16,
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>
+                Execution Pipeline
+              </span>
+              {[
+                { label: "Initializing analysis engine...", min: 0, max: 10 },
+                { label: "Forecasting demand with Holt-Winters & SARIMA...", min: 11, max: 20 },
+                { label: "Running Monte Carlo simulations (10k paths)...", min: 21, max: 30 },
+                { label: "Calculating safety stock & EOQ metrics...", min: 31, max: 40 },
+                { label: "Mapping ABC-XYZ classification matrix...", min: 41, max: 50 },
+                { label: "Scanning Isolation Forest anomalies...", min: 51, max: 60 },
+                { label: "Detecting CUSUM trend change-points...", min: 61, max: 70 },
+                { label: "Optimizing markdown pricing models...", min: 71, max: 80 },
+                { label: "Computing GMROI & turnover metrics...", min: 81, max: 90 },
+                { label: "Generating AI summaries with Groq...", min: 91, max: 100 },
+              ].map((step, i) => {
+                const isCompleted = processingProgress > step.max;
+                const isActive = processingProgress >= step.min && processingProgress <= step.max;
+                const isPending = processingProgress < step.min;
+
+                return (
+                  <div key={i} style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    opacity: isPending ? 0.35 : 1,
+                    transition: "opacity 0.3s ease",
+                  }}>
+                    {isCompleted ? (
+                      <span style={{ color: "#22c55e", fontSize: 13, fontWeight: 700, width: 16 }}>✓</span>
+                    ) : isActive ? (
+                      <div className="pulse-dot" style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: "#FCA311",
+                        margin: "0 4px",
+                      }} />
+                    ) : (
+                      <div style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        border: "1px solid rgba(255,255,255,0.3)",
+                        margin: "0 5px",
+                      }} />
+                    )}
+                    <span style={{
+                      fontSize: 12,
+                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? "#FCA311" : isCompleted ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.4)",
+                    }}>
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (

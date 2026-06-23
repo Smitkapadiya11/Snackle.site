@@ -180,6 +180,75 @@ class RiskScore(BaseModel):
     risk_factors: List[str]             # Human-readable risk drivers
 
 
+class SeasonalPattern(BaseModel):
+    monthly_factors: Dict[str, float]   # "1" -> 0.85, "10" -> 1.35, etc.
+    peak_months: List[int]
+    trough_months: List[int]
+    seasonality_strength: float         # 0-1 (0 = flat, 1 = very seasonal)
+    has_seasonality: bool
+    detected_from_data: bool
+
+
+class MonthlyForecast(BaseModel):
+    month: str          # "YYYY-MM"
+    forecast: float
+    lower: float
+    upper: float
+
+
+class WeeklyForecast(BaseModel):
+    week: str           # Start date "YYYY-MM-DD"
+    forecast: float
+    lower: float
+    upper: float
+
+
+class YearlyForecast(BaseModel):
+    daily: List[Dict[str, Any]]         # First 90 days
+    weekly: List[Dict[str, Any]]        # 26 weeks
+    monthly: List[Dict[str, Any]]       # 12 months
+    total_365d: float
+    peak_month: str
+    trough_month: str
+
+
+class UpcomingEvent(BaseModel):
+    name: str
+    month: int
+    uplift_factor: float
+    months_away: int
+
+
+class HeatmapDataPoint(BaseModel):
+    month: int
+    month_name: str
+    avg_daily: float
+    total: float
+    days: int
+    intensity: float                    # vs average (1.0 = average)
+
+
+class SeasonalContext(BaseModel):
+    seasonal_patterns: Optional[SeasonalPattern] = None
+    heatmap_data: List[Dict[str, Any]] = []
+    upcoming_events: List[Dict[str, Any]] = []
+    yearly_forecast: Optional[Dict[str, Any]] = None
+    category: str = ""
+
+
+class PriceElasticityResult(BaseModel):
+    elasticity: float
+    is_estimated: bool
+    demand_impact_10pct_discount: float
+    demand_impact_10pct_markup: float
+
+
+class ScenarioPlanningResult(BaseModel):
+    optimistic: Dict[str, Any]
+    baseline: Dict[str, Any]
+    pessimistic: Dict[str, Any]
+
+
 class ProductAnalysisResult(BaseModel):
     # Identity
     name: str
@@ -201,6 +270,9 @@ class ProductAnalysisResult(BaseModel):
     abc_xyz: Optional[ABCXYZResult] = None
     anomalies: AnomalyResult
     profitability: ProfitabilityResult
+    seasonal: Optional[SeasonalContext] = None
+    price_elasticity: Optional[PriceElasticityResult] = None
+    scenarios: Optional[ScenarioPlanningResult] = None
 
     # Summary metrics for the AI layer
     key_metrics: Dict[str, Any]

@@ -40,16 +40,57 @@ async function runTypeScriptAnalysis(
       }),
   );
 
+  // Add mock engine_v2 to cards to prevent UI crashes in TS fallback
+  const cardsWithEngineV2 = cards.map(c => ({
+    ...c,
+    engine_v2: {
+      name: c.product_name,
+      sku: c.algorithm_output.product.sku,
+      price: c.price,
+      current_stock: c.algorithm_output.product.current_stock,
+      status: c.status,
+      risk_score: { overall_risk_score: c.priority_score },
+      forecast: { daily_avg: c.algorithm_output.product.avg_daily_sales, trend_pct: c.algorithm_output.product.sales_trend_pct },
+      monte_carlo: { expected_revenue_at_risk: c.algorithm_output.revenue_at_risk },
+      dead_stock: { capital_locked: c.algorithm_output.capital_locked },
+      opportunity: { opportunity_revenue_30d: c.algorithm_output.opportunity_revenue },
+      profitability: { gmroi: 0, meets_gmroi_target: false },
+      key_metrics: c.algorithm_output.raw_metrics,
+    } as any
+  }));
+
+  const critical_count = cards.filter((c) => c.status === "CRITICAL").length;
+  const dead_stock_count = cards.filter((c) => c.status === "DEAD_STOCK").length;
+  const opportunity_count = cards.filter((c) => c.status === "OPPORTUNITY").length;
+  const healthy_count = cards.filter((c) => c.status === "HEALTHY").length;
+  const monitor_count = cards.filter((c) => c.status === "MONITOR").length;
+  const total_revenue_at_risk = algorithm_outputs.reduce((s, o) => s + o.revenue_at_risk, 0);
+  const total_capital_locked = algorithm_outputs.reduce((s, o) => s + o.capital_locked, 0);
+  const total_opportunity_value = algorithm_outputs.reduce((s, o) => s + o.opportunity_revenue, 0);
+
   return {
     brand_context,
     total_products: cards.length,
-    critical_count: cards.filter((c) => c.status === "CRITICAL").length,
-    dead_stock_count: cards.filter((c) => c.status === "DEAD_STOCK").length,
-    opportunity_count: cards.filter((c) => c.status === "OPPORTUNITY").length,
-    total_revenue_at_risk: algorithm_outputs.reduce((s, o) => s + o.revenue_at_risk, 0),
-    total_capital_locked: algorithm_outputs.reduce((s, o) => s + o.capital_locked, 0),
-    total_opportunity_value: algorithm_outputs.reduce((s, o) => s + o.opportunity_revenue, 0),
-    product_cards: cards,
+    critical_count,
+    dead_stock_count,
+    opportunity_count,
+    total_revenue_at_risk,
+    total_capital_locked,
+    total_opportunity_value,
+    portfolio_summary: {
+      total_revenue_at_risk,
+      total_capital_locked,
+      total_opportunity_value_30d: total_opportunity_value,
+      critical_count,
+      dead_stock_count,
+      opportunity_count,
+      healthy_count,
+      monitor_count,
+      avg_forecast_mape: 0.15,
+      portfolio_health_score: Math.max(0, 100 - (critical_count * 15) - (dead_stock_count * 10)),
+      total_stock_value: cards.reduce((sum, c) => sum + (c.algorithm_output.product.total_stock_value || 0), 0),
+    },
+    product_cards: cardsWithEngineV2,
     generated_at: new Date().toISOString(),
     engine_version: "1.0.0-typescript-fallback",
   };
