@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 
-const LINKS = [
+const LINKS: { href: string; label: string; isMarket?: boolean }[] = [
   { href: "/", label: "Home" },
   { href: "/use", label: "Console" },
+  { href: "/market", label: "Market 2.0", isMarket: true },
   { href: "/about", label: "About" },
   { href: "/creator", label: "Creator" },
 ];
@@ -75,18 +76,38 @@ export function Navigation() {
                 padding: "6px 14px",
                 fontSize: 14,
                 fontWeight: 500,
-                color: pathname === link.href ? "var(--c-accent)" : "rgba(255,255,255,0.65)",
+                color: pathname === link.href ? "var(--c-accent)" : link.isMarket ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.65)",
                 textDecoration: "none",
                 borderRadius: 100,
                 background: pathname === link.href ? "rgba(252,163,17,0.10)" : "transparent",
                 transition: "all 0.2s ease",
                 whiteSpace: "nowrap",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
               }}
             >
+              {link.isMarket && (
+                <span style={{
+                  display: "inline-block",
+                  width: 5, height: 5,
+                  borderRadius: "50%",
+                  background: "#22c55e",
+                  boxShadow: "0 0 6px #22c55e",
+                  animation: "live-pulse-nav 2s ease-in-out infinite",
+                  flexShrink: 0,
+                }} />
+              )}
               {link.label}
             </Link>
           ))}
         </div>
+        <style>{`
+          @keyframes live-pulse-nav {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.6); }
+          }
+        `}</style>
 
         <div className="nav-desktop-cta" style={{ gap: 8, alignItems: "center" }}>
           <Link
@@ -198,8 +219,21 @@ export function Navigation() {
               transform: menuOpen ? "translateY(0)" : "translateY(20px)",
               transition: `all 0.35s ease ${i * 60}ms`,
               padding: "8px 0",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 12,
             }}
           >
+            {link.isMarket && (
+              <span style={{
+                display: "inline-block",
+                width: 8, height: 8,
+                borderRadius: "50%",
+                background: "#22c55e",
+                boxShadow: "0 0 8px #22c55e",
+                flexShrink: 0,
+              }} />
+            )}
             {link.label}
           </Link>
         ))}

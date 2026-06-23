@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Footer } from "@/components/layout/Footer";
 import { IntelligenceCreature } from "@/components/art/IntelligenceCreature";
 import { useSiteAnimations } from "@/lib/animation/useSiteAnimations";
+import { MarketIntelSection } from "@/app/components/sections/MarketIntelSection";
 
 const ALGORITHMS = [
   { name: "Monte Carlo", path: "M4 12 Q8 4 12 12 Q16 20 20 12", desc: "10,000 demand paths per product", tag: "Stockout Risk" },
@@ -139,18 +140,23 @@ export default function HomePage() {
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 8,
-              background: "var(--c-accent-dim)",
-              border: "1px solid var(--c-accent-border)",
-              borderRadius: 999,
-              padding: "6px 16px",
+              gap: 12,
               marginBottom: 24,
+              flexWrap: "wrap",
             }}
           >
-            <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--c-accent)", display: "inline-block" }} />
-            <span style={{ fontSize: 12, color: "var(--c-accent)", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Snackle 1.0 — Now Live
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              background: "var(--c-accent-dim)",
+              border: "1px solid var(--c-accent-border)",
+              borderRadius: 999, padding: "6px 16px",
+            }}>
+              <span className="pulse-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--c-accent)", display: "inline-block" }} />
+              <span className="version-badge-live">Snackle 1.0 — Live</span>
             </span>
+            <Link href="/market" style={{ textDecoration: "none" }}>
+              <span className="version-badge-coming">Snackle 2.0 — Market Intelligence ↗</span>
+            </Link>
           </div>
 
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(52px, 5.5vw, 88px)", fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.035em", marginBottom: 28 }}>
@@ -310,6 +316,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Snackle 2.0 Market Intelligence teaser */}
+      <MarketIntelSection />
 
       {/* Demo cards */}
       <section className="reveal-section" style={{ padding: "80px 0", position: "relative", zIndex: 1 }}>

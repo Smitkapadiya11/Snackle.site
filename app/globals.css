@@ -1472,3 +1472,30 @@ body.snackle {
   }
   .creature-svg { animation: none !important; }
 }
+
+/* Snackle 2.0 version badges */
+.version-badge-live {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #FCA311;
+  font-weight: 600;
+}
+.version-badge-coming {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 6px 16px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-block;
+}
+.version-badge-coming:hover {
+  color: #FCA311;
+  border-color: rgba(252,163,17,0.3);
+}
