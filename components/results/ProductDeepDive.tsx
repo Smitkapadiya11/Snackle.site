@@ -46,7 +46,7 @@ function MetricRow({ label, value, subValue, color, highlight }: {
   );
 }
 
-type TabKey = "overview" | "forecast" | "monte_carlo" | "seasonal" | "algorithms";
+type TabKey = "overview" | "forecast" | "scenarios" | "monte_carlo" | "seasonal" | "algorithms";
 
 export default function ProductDeepDive({ card, currency, onClose }: ProductDeepDiveProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
@@ -67,6 +67,7 @@ export default function ProductDeepDive({ card, currency, onClose }: ProductDeep
   const tabs: { key: TabKey; label: string; emoji: string }[] = [
     { key: "overview", label: "Overview", emoji: "📊" },
     { key: "forecast", label: "Forecast", emoji: "📈" },
+    { key: "scenarios", label: "Scenarios", emoji: "🔮" },
     { key: "monte_carlo", label: "Monte Carlo", emoji: "🎲" },
     { key: "seasonal", label: "Seasonal", emoji: "🗓️" },
     { key: "algorithms", label: "All Metrics", emoji: "⚙️" },
@@ -376,6 +377,112 @@ export default function ProductDeepDive({ card, currency, onClose }: ProductDeep
                 {" · "}
                 Model: {v2.forecast.forecast_model_used}
               </div>
+            </div>
+          )}
+
+          {/* ── SCENARIOS ── */}
+          {activeTab === "scenarios" && (
+            <div>
+              {v2?.scenarios ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {/* Header */}
+                  <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", marginBottom: 4 }}>
+                    Demand scenarios for the next 30 days, using your forecast&apos;s 80% confidence interval and price elasticity model.
+                  </p>
+
+                  {(
+                    [
+                      { key: "optimistic",  color: "#22c55e",  icon: "🚀" },
+                      { key: "baseline",    color: "#3b82f6",  icon: "📍" },
+                      { key: "pessimistic", color: "#ef4444",  icon: "⚠️" },
+                      { key: "markdown",    color: "#eab308",  icon: "💸" },
+                    ] as const
+                  ).map(({ key, color, icon }) => {
+                    type ScenarioMap = Record<string, Record<string, unknown> | undefined>;
+                    const s = (v2.scenarios as ScenarioMap)[key];
+                    if (!s) return null;
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          background: `${color}08`,
+                          border: `1px solid ${color}30`,
+                          borderRadius: 14,
+                          padding: "16px 20px",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color, display: "flex", alignItems: "center", gap: 6 }}>
+                            {icon} {String(s.label ?? key.replace("_", " "))}
+                          </span>
+                          <span style={{ fontSize: 20, fontWeight: 800, color, fontFamily: "var(--font-display)" }}>
+                            {Math.round(Number(s.demand_30d ?? 0))} units
+                          </span>
+                        </div>
+
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+                          {s.revenue_opportunity !== undefined && (
+                            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                              Revenue: <span style={{ color: "#22c55e", fontWeight: 600 }}>{fmt(Number(s.revenue_opportunity))}</span>
+                            </div>
+                          )}
+                          {s.revenue_30d !== undefined && (
+                            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                              Revenue: <span style={{ color: "#22c55e", fontWeight: 600 }}>{fmt(Number(s.revenue_30d))}</span>
+                            </div>
+                          )}
+                          {Number(s.lost_sales_risk ?? 0) > 0 && (
+                            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                              Lost sales risk: <span style={{ color: "#ef4444", fontWeight: 600 }}>{fmt(Number(s.lost_sales_risk))}</span>
+                            </div>
+                          )}
+                          {s.capital_lock_risk !== undefined && Number(s.capital_lock_risk) > 0 && (
+                            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                              Capital lock risk: <span style={{ color: "#eab308", fontWeight: 600 }}>{fmt(Number(s.capital_lock_risk))}</span>
+                            </div>
+                          )}
+                          {s.discount_pct !== undefined && (
+                            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                              Discount: <span style={{ color: "#eab308", fontWeight: 600 }}>{String(s.discount_pct)}%</span>
+                            </div>
+                          )}
+                          {s.new_price !== undefined && (
+                            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                              New price: <span style={{ color: "#FCA311", fontWeight: 600 }}>{currency}{String(s.new_price)}</span>
+                            </div>
+                          )}
+                          {s.revenue_vs_no_action !== undefined && (
+                            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                              vs no action: <span style={{ color: Number(s.revenue_vs_no_action) >= 0 ? "#22c55e" : "#ef4444", fontWeight: 600 }}>
+                                {Number(s.revenue_vs_no_action) >= 0 ? "+" : ""}{fmt(Number(s.revenue_vs_no_action))}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {s?.action !== undefined && (
+                          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontStyle: "italic", borderTop: `1px solid ${color}20`, paddingTop: 10, marginTop: 4 }}>
+                            {String(s.action)}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Price elasticity note */}
+                  {v2.price_elasticity && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "12px 16px", fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
+                      <span style={{ color: "#FCA311", fontWeight: 600 }}>Price Elasticity:</span>{" "}
+                      {v2.price_elasticity.elasticity} · A 10% discount boosts demand by approx. {v2.price_elasticity.demand_impact_10pct_discount}%.
+                      {v2.price_elasticity.is_estimated && " (Estimated — no historical price change data available.)"}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p style={{ color: "rgba(255,255,255,0.35)", textAlign: "center", paddingTop: 48 }}>
+                  Scenario data not available — connect the Python engine for full analysis.
+                </p>
+              )}
             </div>
           )}
 

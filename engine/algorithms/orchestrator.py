@@ -148,8 +148,13 @@ def analyze_single_product(
     # ── Advanced Algorithms (new) ──
     elasticity_data = calculate_price_elasticity(product.sales_history, product.price)
     elasticity_result = PriceElasticityResult(**elasticity_data)
-    
-    scenarios_data = generate_scenarios(forecast, product.current_stock, product.price)
+
+    scenarios_data = generate_scenarios(
+        forecast,
+        product.current_stock,
+        product.price,
+        price_elasticity=elasticity_result.elasticity,  # feed real elasticity in
+    )
     scenarios_result = ScenarioPlanningResult(**scenarios_data)
 
     key_metrics = {
@@ -250,10 +255,15 @@ def run_full_analysis(
         if len(series) > 0:
             top_velocity = max(top_velocity, float(series.mean()))
 
-    analyzed = [
-        analyze_single_product(p, brand, abc_xyz_results, top_seller_velocity=top_velocity)
-        for p in products
-    ]
+    analyzed = []
+    for p in products:
+        try:
+            result = analyze_single_product(p, brand, abc_xyz_results, top_seller_velocity=top_velocity)
+            analyzed.append(result)
+        except Exception as exc:
+            import traceback
+            print(f"[orchestrator] Error analyzing product '{p.name}': {exc}\n{traceback.format_exc()}")
+            # Skip bad product rather than crashing the entire analysis
 
     analyzed.sort(key=lambda x: x.risk_score.overall_risk_score, reverse=True)
 

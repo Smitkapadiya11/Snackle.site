@@ -247,6 +247,7 @@ class ScenarioPlanningResult(BaseModel):
     optimistic: Dict[str, Any]
     baseline: Dict[str, Any]
     pessimistic: Dict[str, Any]
+    markdown: Dict[str, Any] = {}   # pricing markdown scenario
 
 
 class ProductAnalysisResult(BaseModel):

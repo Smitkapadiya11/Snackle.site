@@ -181,78 +181,141 @@ def _sarima_forecast(
     return best_forecast, best_mape
 
 
+def _build_ml_features(series: pd.Series) -> pd.DataFrame:
+    """Build rich feature matrix including calendar, lag, and rolling features.
+    
+    Calendar features are CRITICAL for Indian D2C retail, which has:
+    - Strong weekend spikes (Sat/Sun purchase behaviour on marketplaces)
+    - Month-of-year seasonality (Diwali Oct-Nov, summer Apr-Jun)
+    - End-of-month salary cycle bumps (week 4)
+    """
+    df = pd.DataFrame({"y": series.values}, index=series.index)
+
+    # Lag features
+    for lag in [1, 7, 14, 21]:
+        df[f"lag_{lag}"] = df["y"].shift(lag)
+
+    # Rolling statistics
+    df["rolling_mean_7"]  = df["y"].shift(1).rolling(7).mean()
+    df["rolling_mean_14"] = df["y"].shift(1).rolling(14).mean()
+    df["rolling_mean_21"] = df["y"].shift(1).rolling(21).mean()
+    df["rolling_std_7"]   = df["y"].shift(1).rolling(7).std().fillna(0)
+
+    # Calendar features (available after series.index is a DatetimeIndex)
+    if hasattr(series.index, "dayofweek"):
+        df["day_of_week"]   = series.index.dayofweek          # 0=Mon … 6=Sun
+        df["month"]         = series.index.month               # 1-12
+        df["is_weekend"]    = (series.index.dayofweek >= 5).astype(int)
+        df["week_of_month"] = ((series.index.day - 1) // 7).clip(0, 3)  # 0-3
+        # Festive season flag: Oct(10), Nov(11) are Diwali period
+        df["is_festive"]    = series.index.month.isin([10, 11]).astype(int)
+        # Payday bump: last week of month
+        df["is_payday_week"] = (series.index.day >= 24).astype(int)
+    else:
+        df["day_of_week"] = 0
+        df["month"]       = 1
+        df["is_weekend"]  = 0
+        df["week_of_month"] = 0
+        df["is_festive"]  = 0
+        df["is_payday_week"] = 0
+
+    return df.dropna()
+
+
 def _ml_forecast(
     series: pd.Series,
     horizon: int,
 ) -> Tuple[np.ndarray, float]:
-    """Gradient Boosting & Random Forest ensemble with lag features."""
+    """Gradient Boosting + Random Forest ensemble with calendar & lag features.
+    
+    Calendar features (day_of_week, month, is_weekend, is_festive) capture
+    the strong temporal patterns present in Indian D2C marketplace sales.
+    """
     n = len(series)
     if n < 30:
         return _simple_ma_forecast(series, horizon)
 
-    # Create features
-    df = pd.DataFrame({"y": series.values})
-    for lag in [1, 7, 14]:
-        df[f"lag_{lag}"] = df["y"].shift(lag)
-    
-    # Add rolling means
-    df["rolling_mean_7"] = df["y"].shift(1).rolling(7).mean()
-    df["rolling_mean_14"] = df["y"].shift(1).rolling(14).mean()
-    
-    df = df.dropna()
+    df = _build_ml_features(series)
     if len(df) < 14:
         return _simple_ma_forecast(series, horizon)
 
-    X = df.drop(columns=["y"]).values
+    feature_cols = [c for c in df.columns if c != "y"]
+    X = df[feature_cols].values
     y = df["y"].values
 
     split = max(int(len(X) * 0.8), len(X) - 14)
     X_train, X_test = X[:split], X[split:]
     y_train, y_test = y[:split], y[split:]
 
-    models = [
-        GradientBoostingRegressor(n_estimators=100, max_depth=3, random_state=42),
-        RandomForestRegressor(n_estimators=100, max_depth=5, random_state=42)
+    candidates = [
+        GradientBoostingRegressor(
+            n_estimators=150, max_depth=4, learning_rate=0.05,
+            subsample=0.8, random_state=42
+        ),
+        RandomForestRegressor(
+            n_estimators=150, max_depth=6, min_samples_leaf=2,
+            random_state=42, n_jobs=-1
+        ),
     ]
-    
-    mapes = []
-    trained_models = []
-    
-    for model in models:
+
+    mapes: list[float] = []
+    trained: list[Optional[object]] = []
+
+    for model in candidates:
         try:
             model.fit(X_train, y_train)
             preds = np.maximum(model.predict(X_test), 0)
             mape = float(mean_absolute_percentage_error(y_test + 1e-6, preds + 1e-6))
             mapes.append(mape)
-            
-            # Retrain on full data
             full_model = model.__class__(**model.get_params())
             full_model.fit(X, y)
-            trained_models.append(full_model)
+            trained.append(full_model)
         except Exception:
             mapes.append(float("inf"))
-            trained_models.append(None)
-            
-    best_idx = np.argmin(mapes)
+            trained.append(None)
+
+    best_idx = int(np.argmin(mapes))
     if mapes[best_idx] == float("inf"):
         return _simple_ma_forecast(series, horizon)
-        
-    best_model = trained_models[best_idx]
+
+    best_model = trained[best_idx]
     best_mape = mapes[best_idx]
-    
-    # Iterative multi-step forecast
-    last_vals = series.values[-14:].tolist()
-    forecast = []
-    for _ in range(horizon):
+
+    # Iterative multi-step forecast with calendar feature propagation
+    last_vals = list(series.values[-21:]) if len(series) >= 21 else list(series.values)
+    # Pad to at least 21 values with series mean
+    while len(last_vals) < 21:
+        last_vals.insert(0, float(series.mean()))
+
+    last_date = series.index[-1] if hasattr(series.index, "dayofweek") else None
+    forecast_out = []
+
+    for step in range(horizon):
+        # Calendar features for forecast step
+        if last_date is not None:
+            fd = last_date + pd.Timedelta(days=step + 1)
+            dow       = fd.dayofweek
+            mon       = fd.month
+            is_we     = int(fd.dayofweek >= 5)
+            wom       = min((fd.day - 1) // 7, 3)
+            is_fest   = int(fd.month in [10, 11])
+            is_payday = int(fd.day >= 24)
+        else:
+            dow = is_we = wom = is_fest = is_payday = 0
+            mon = 1
+
+        lv = last_vals
         feats = [
-            last_vals[-1], last_vals[-7], last_vals[-14],
-            np.mean(last_vals[-7:]), np.mean(last_vals[-14:])
+            lv[-1], lv[-7], lv[-14], lv[-21],
+            np.mean(lv[-7:]), np.mean(lv[-14:]), np.mean(lv[-21:]),
+            float(np.std(lv[-7:]) if len(lv) >= 7 else 0),
+            dow, mon, is_we, wom, is_fest, is_payday,
         ]
-        pred = max(0, best_model.predict([feats])[0])
-        forecast.append(pred)
+        pred = max(0.0, float(best_model.predict([feats])[0]))  # type: ignore[union-attr]
+        forecast_out.append(pred)
         last_vals.append(pred)
-        
-    return np.array(forecast), best_mape
+
+    return np.array(forecast_out), best_mape
 
 
 def forecast_demand(

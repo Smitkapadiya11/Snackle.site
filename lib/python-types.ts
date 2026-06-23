@@ -150,6 +150,18 @@ export interface PythonProductAnalysis {
     net_margin_after_holding: number;
   };
   seasonal?: SeasonalContext;
+  price_elasticity?: {
+    elasticity: number;
+    is_estimated: boolean;
+    demand_impact_10pct_discount: number;
+    demand_impact_10pct_markup: number;
+  };
+  scenarios?: {
+    optimistic: Record<string, unknown>;
+    baseline: Record<string, unknown>;
+    pessimistic: Record<string, unknown>;
+    markdown?: Record<string, unknown>;
+  };
   key_metrics: Record<string, number | string | boolean | null>;
 }
 
