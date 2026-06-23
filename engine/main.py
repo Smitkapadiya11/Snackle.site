@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from models.schemas import AnalyzeRequest, AnalyzeResponse
 from algorithms.orchestrator import run_full_analysis
+from market_intelligence.router import router as market_router
 
 app = FastAPI(
     title="Inventory Intelligence Engine",
@@ -27,6 +28,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+app.include_router(market_router)
 
 
 @app.get("/health")
